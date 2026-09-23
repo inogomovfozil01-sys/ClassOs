@@ -11,8 +11,9 @@ import { logAuditEvent } from "@/lib/audit";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const currentUser = await getCurrentUser();
     if (!currentUser || !canManageUsers(currentUser.role)) {
@@ -20,7 +21,7 @@ export async function PATCH(
     }
 
     const targetUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: resourceId },
     });
     if (!targetUser) {
       return NextResponse.json(
@@ -63,9 +64,9 @@ export async function PATCH(
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      await ensureSingleHomeroomTeacher(tx, data.role, params.id);
+      await ensureSingleHomeroomTeacher(tx, data.role, resourceId);
       return tx.user.update({
-        where: { id: params.id },
+        where: { id: resourceId },
         data,
       });
     });
@@ -94,8 +95,9 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const currentUser = await getCurrentUser();
     if (!currentUser || !canManageUsers(currentUser.role)) {
@@ -103,7 +105,7 @@ export async function DELETE(
     }
 
     const targetUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: resourceId },
     });
     if (!targetUser) {
       return NextResponse.json(
@@ -119,13 +121,13 @@ export async function DELETE(
       );
     }
 
-    await prisma.user.delete({ where: { id: params.id } });
+    await prisma.user.delete({ where: { id: resourceId } });
 
     await logAuditEvent({
       userId: currentUser.id,
       action: "USER_DELETED",
       entity: "USER",
-      entityId: params.id,
+      entityId: resourceId,
       details: { username: targetUser.username },
     });
 

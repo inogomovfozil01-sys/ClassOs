@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
-import { getFilePath } from "@/lib/storage";
-import fs from "fs";
+import { readStoredFile } from "@/lib/storage";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -15,21 +15,16 @@ export async function GET(
     }
 
     const file = await prisma.fileAsset.findUnique({
-      where: { id: params.id },
+      where: { id: resourceId },
     });
 
     if (!file) {
       return new NextResponse("File not found", { status: 404 });
     }
 
-    const absolutePath = getFilePath(file.storagePath);
-    if (!absolutePath) {
-      return new NextResponse("File storage missing", { status: 404 });
-    }
-
-    const fileBuffer = await fs.promises.readFile(absolutePath);
-
-    return new NextResponse(fileBuffer, {
+    const fileBuffer = await readStoredFile(file.storagePath);
+    if(!fileBuffer) return new NextResponse("File storage missing",{status:404});
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         "Content-Type": file.mimeType || "application/octet-stream",
         "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(file.name)}`,

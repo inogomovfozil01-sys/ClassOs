@@ -4,8 +4,9 @@ import prisma from "@/lib/prisma";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -20,7 +21,7 @@ export async function POST(
     const existing = await prisma.messageReaction.findUnique({
       where: {
         messageId_userId_emoji: {
-          messageId: params.id,
+          messageId: resourceId,
           userId: user.id,
           emoji,
         },
@@ -33,7 +34,7 @@ export async function POST(
     } else {
       const reaction = await prisma.messageReaction.create({
         data: {
-          messageId: params.id,
+          messageId: resourceId,
           userId: user.id,
           emoji,
         },

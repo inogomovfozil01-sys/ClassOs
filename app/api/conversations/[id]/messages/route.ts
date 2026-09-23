@@ -4,8 +4,9 @@ import prisma from "@/lib/prisma";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -16,7 +17,7 @@ export async function GET(
     const member = await prisma.conversationMember.findUnique({
       where: {
         conversationId_userId: {
-          conversationId: params.id,
+          conversationId: resourceId,
           userId: user.id,
         },
       },
@@ -33,7 +34,7 @@ export async function GET(
     const query = new URL(req.url).searchParams.get("q")?.trim();
     const messages = await prisma.message.findMany({
       where: {
-        conversationId: params.id,
+        conversationId: resourceId,
         isDeleted: false,
         ...(query ? { content: { contains: query } } : {}),
       },
@@ -61,12 +62,12 @@ export async function GET(
 
     const page = messages.slice(0, 100).reverse();
     const readers = await prisma.conversationMember.findMany({
-      where: { conversationId: params.id, userId: { not: user.id } },
+      where: { conversationId: resourceId, userId: { not: user.id } },
       select: { lastReadMessageId: true },
     });
     const readMessages = await prisma.message.findMany({
       where: {
-        conversationId: params.id,
+        conversationId: resourceId,
         id: {
           in: readers.flatMap((r) =>
             r.lastReadMessageId ? [r.lastReadMessageId] : [],
@@ -99,8 +100,9 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -111,7 +113,7 @@ export async function POST(
     const member = await prisma.conversationMember.findUnique({
       where: {
         conversationId_userId: {
-          conversationId: params.id,
+          conversationId: resourceId,
           userId: user.id,
         },
       },
@@ -133,7 +135,7 @@ export async function POST(
 
     const message = await prisma.message.create({
       data: {
-        conversationId: params.id,
+        conversationId: resourceId,
         senderId: user.id,
         content: content?.trim() || "",
         type: type || (attachments?.length ? "IMAGE" : "TEXT"),
@@ -168,7 +170,7 @@ export async function POST(
     // Realtime broadcast via global io if available
     if ((global as any).io) {
       (global as any).io
-        .to(`conv:${params.id}`)
+        .to(`conv:${resourceId}`)
         .emit("message:received", message);
     }
 

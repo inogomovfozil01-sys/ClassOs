@@ -5,8 +5,9 @@ import { canManageTables } from "@/lib/auth/rbac";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const user = await getCurrentUser();
     if (!user || !canManageTables(user.role)) {
@@ -22,12 +23,12 @@ export async function POST(
     }
 
     const count = await prisma.customTableColumn.count({
-      where: { tableId: params.id },
+      where: { tableId: resourceId },
     });
 
     const column = await prisma.customTableColumn.create({
       data: {
-        tableId: params.id,
+        tableId: resourceId,
         title: title.trim(),
         type,
         config: config ? JSON.stringify(config) : null,

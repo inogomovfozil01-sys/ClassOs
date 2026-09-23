@@ -8,3 +8,9 @@ artifacts
 prisma/*.db*
 scripts/qa-*
 .publish
+
+.prisma-production
+.migration.json
+prisma/probe.prisma
+scripts/probe-production.cjs
+scripts/migrate-production.cjs

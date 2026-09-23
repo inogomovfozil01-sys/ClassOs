@@ -31,6 +31,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    if (process.env.NEXT_PUBLIC_SERVERLESS === "1") return;
     const socketInstance = io({
       path: "/api/socketio",
       reconnectionAttempts: 10,

@@ -5,8 +5,9 @@ import { canManageTables } from "@/lib/auth/rbac";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -14,7 +15,7 @@ export async function GET(
     }
 
     const table = await prisma.customTable.findUnique({
-      where: { id: params.id },
+      where: { id: resourceId },
       include: {
         columns: { orderBy: { orderIndex: "asc" } },
         rows: {
@@ -48,15 +49,16 @@ export async function GET(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const user = await getCurrentUser();
     if (!user || !canManageTables(user.role)) {
       return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
     }
 
-    await prisma.customTable.delete({ where: { id: params.id } });
+    await prisma.customTable.delete({ where: { id: resourceId } });
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Delete table error:", error);

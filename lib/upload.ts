@@ -3,6 +3,9 @@ export function uploadFile(
   onProgress: (percent: number) => void,
 ): Promise<any> {
   return new Promise((resolve, reject) => {
+    const file = formData.get("file");
+    const maxMb = Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB || 50);
+    if(file instanceof File && file.size > maxMb * 1024 * 1024) {reject(Error(`Максимальный размер файла: ${maxMb} МБ`));return;}
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/files/upload");
     xhr.upload.onprogress = (e) => {

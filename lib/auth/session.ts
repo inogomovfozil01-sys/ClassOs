@@ -62,7 +62,7 @@ export async function getSessionUser(token: string) {
 
 export async function getCurrentUser() {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
     if (!sessionCookie?.value) return null;
 

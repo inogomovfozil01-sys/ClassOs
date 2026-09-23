@@ -21,10 +21,11 @@ function emit(conversationId: string, payload: any) {
 }
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
-    const context = await access(params.id);
+    const context = await access(resourceId);
     if (!context || context.message.senderId !== context.user.id)
       return NextResponse.json(
         { error: "Нельзя изменять это сообщение" },
@@ -40,7 +41,7 @@ export async function PATCH(
         { status: 400 },
       );
     const message = await prisma.message.update({
-      where: { id: params.id },
+      where: { id: resourceId },
       data: { content: content.trim(), editedAt: new Date() },
     });
     emit(message.conversationId, message);
@@ -54,17 +55,18 @@ export async function PATCH(
 }
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
-    const context = await access(params.id);
+    const context = await access(resourceId);
     if (!context || context.message.senderId !== context.user.id)
       return NextResponse.json(
         { error: "Нельзя удалить это сообщение" },
         { status: 403 },
       );
     const message = await prisma.message.update({
-      where: { id: params.id },
+      where: { id: resourceId },
       data: { isDeleted: true },
     });
     emit(message.conversationId, message);
@@ -78,10 +80,11 @@ export async function DELETE(
 }
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
-    const context = await access(params.id);
+    const context = await access(resourceId);
     if (!context)
       return NextResponse.json(
         { error: "Нет доступа к сообщению" },
@@ -93,7 +96,7 @@ export async function POST(
         return NextResponse.json({ error: "Укажите причину" }, { status: 400 });
       await prisma.messageReport.create({
         data: {
-          messageId: params.id,
+          messageId: resourceId,
           reporterId: context.user.id,
           reason: reason.trim(),
         },

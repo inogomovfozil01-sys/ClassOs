@@ -7,8 +7,9 @@ import { logAuditEvent } from "@/lib/audit";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const currentUser = await getCurrentUser();
     if (!currentUser || !canManageUsers(currentUser.role)) {
@@ -24,7 +25,7 @@ export async function POST(
     }
 
     const targetUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: resourceId },
     });
     if (!targetUser) {
       return NextResponse.json(
@@ -43,7 +44,7 @@ export async function POST(
     const passwordHash = await hashPassword(newPassword);
 
     await prisma.user.update({
-      where: { id: params.id },
+      where: { id: resourceId },
       data: {
         passwordHash,
         mustChangePassword: true,
@@ -51,13 +52,13 @@ export async function POST(
     });
 
     // Terminate existing sessions to force re-login
-    await prisma.session.deleteMany({ where: { userId: params.id } });
+    await prisma.session.deleteMany({ where: { userId: resourceId } });
 
     await logAuditEvent({
       userId: currentUser.id,
       action: "ADMIN_RESET_USER_PASSWORD",
       entity: "USER",
-      entityId: params.id,
+      entityId: resourceId,
       details: { username: targetUser.username },
     });
 

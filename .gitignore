@@ -62,3 +62,11 @@ public/uploads/*
 *.sqlite*
 /.publish/
 /scripts/qa-*
+
+/prisma/schema.postgresql.prisma
+/.prisma-production/
+/scripts/probe-production.cjs
+
+.migration.json
+/prisma/probe.prisma
+/scripts/migrate-production.cjs

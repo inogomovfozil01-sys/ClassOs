@@ -533,3 +533,9 @@ model SystemSetting {
   value     String
   updatedAt DateTime @updatedAt
 }
+
+model StoredFile {
+  key String @id
+  data Bytes
+  createdAt DateTime @default(now())
+}

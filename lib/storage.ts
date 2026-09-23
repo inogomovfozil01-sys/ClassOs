@@ -1,3 +1,4 @@
+import prisma from './prisma';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
@@ -5,12 +6,12 @@ import crypto from 'crypto';
 const UPLOAD_DIR = path.join(process.cwd(), 'storage', 'uploads');
 
 // Ensure upload directory exists
-if (!fs.existsSync(UPLOAD_DIR)) {
+if (!process.env.VERCEL && !fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
 // Max 50 MB
-export const MAX_FILE_SIZE = 50 * 1024 * 1024;
+export const MAX_FILE_SIZE = (process.env.VERCEL ? 4 : 50) * 1024 * 1024;
 
 export const ALLOWED_MIME_TYPES = new Set([
   // Images
@@ -47,7 +48,7 @@ export function sanitizeFileName(name: string): string {
 
 export async function saveUploadedFile(fileBuffer: Buffer, originalName: string, mimeType: string) {
   if (fileBuffer.length > MAX_FILE_SIZE) {
-    throw new Error('Размер файла превышает допустимый лимит (50 МБ)');
+    throw new Error(`Размер файла превышает лимит ${MAX_FILE_SIZE / 1024 / 1024} МБ`);
   }
 
   const ext = path.extname(originalName) || '.bin';
@@ -55,7 +56,8 @@ export async function saveUploadedFile(fileBuffer: Buffer, originalName: string,
   const safeFilename = `${Date.now()}-${randomKey}${ext}`;
   const filePath = path.join(UPLOAD_DIR, safeFilename);
 
-  await fs.promises.writeFile(filePath, fileBuffer);
+  if (process.env.VERCEL) await prisma.storedFile.create({data:{key:safeFilename,data:fileBuffer}});
+  else await fs.promises.writeFile(filePath, fileBuffer);
 
   return {
     storageKey: safeFilename,
@@ -72,4 +74,9 @@ export function getFilePath(storageKey: string): string | null {
   const fullPath = path.join(UPLOAD_DIR, safeKey);
   if (!fs.existsSync(fullPath)) return null;
   return fullPath;
+}
+
+export async function readStoredFile(key:string):Promise<Buffer|null>{
+  if(process.env.VERCEL){const stored=await prisma.storedFile.findUnique({where:{key}});return stored?Buffer.from(stored.data):null;}
+  const filePath=getFilePath(key);return filePath?fs.promises.readFile(filePath):null;
 }

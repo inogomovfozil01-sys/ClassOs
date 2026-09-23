@@ -7,8 +7,9 @@ import { syncTableMembers, TABLE_MEMBER_ROLES } from "@/lib/table-members";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const user = await getCurrentUser();
     if (!user || !canManageTables(user.role)) {
@@ -18,7 +19,7 @@ export async function POST(
     const { studentIds, addAllStudents } = await req.json();
 
     if (addAllStudents) {
-      const count = await syncTableMembers(params.id);
+      const count = await syncTableMembers(resourceId);
       return NextResponse.json({ success: true, count });
     }
     if (
@@ -43,12 +44,12 @@ export async function POST(
     const targetStudentIds = eligible.map((u) => u.id);
     // Get current max order index
     const currentRowsCount = await prisma.customTableRow.count({
-      where: { tableId: params.id },
+      where: { tableId: resourceId },
     });
 
     // Filter out students already in table
     const existingRows = await prisma.customTableRow.findMany({
-      where: { tableId: params.id },
+      where: { tableId: resourceId },
       select: { studentId: true },
     });
     const existingSet = new Set(existingRows.map((r) => r.studentId));
@@ -59,7 +60,7 @@ export async function POST(
       // Manual empty row addition
       const newRow = await prisma.customTableRow.create({
         data: {
-          tableId: params.id,
+          tableId: resourceId,
           orderIndex: currentRowsCount,
         },
       });
@@ -67,7 +68,7 @@ export async function POST(
     }
 
     const rowsData = toAdd.map((sId, idx) => ({
-      tableId: params.id,
+      tableId: resourceId,
       studentId: sId,
       orderIndex: currentRowsCount + idx,
     }));

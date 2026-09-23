@@ -3,14 +3,15 @@ import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const user = await getCurrentUser();
     if (!user)
       return NextResponse.json({ error: "Нет доступа" }, { status: 401 });
     const member = await prisma.conversationMember.findFirst({
-      where: { conversationId: params.id, userId: user.id },
+      where: { conversationId: resourceId, userId: user.id },
     });
     if (!member)
       return NextResponse.json(
@@ -19,7 +20,7 @@ export async function POST(
       );
     const { messageId } = await req.json();
     const message = await prisma.message.findFirst({
-      where: { id: messageId, conversationId: params.id },
+      where: { id: messageId, conversationId: resourceId },
     });
     if (!message)
       return NextResponse.json(
@@ -31,9 +32,9 @@ export async function POST(
       data: { lastReadMessageId: message.id },
     });
     (global as any).io
-      ?.to(`conv:${params.id}`)
+      ?.to(`conv:${resourceId}`)
       .emit("message:read_update", {
-        conversationId: params.id,
+        conversationId: resourceId,
         messageId: message.id,
         userId: user.id,
         createdAt: message.createdAt,

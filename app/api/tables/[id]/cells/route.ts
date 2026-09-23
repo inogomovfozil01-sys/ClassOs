@@ -5,8 +5,9 @@ import { canManageTables } from "@/lib/auth/rbac";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const user = await getCurrentUser();
     if (!user || !canManageTables(user.role)) {
@@ -24,10 +25,10 @@ export async function PATCH(
 
     const [row, column] = await Promise.all([
       prisma.customTableRow.findFirst({
-        where: { id: rowId, tableId: params.id },
+        where: { id: rowId, tableId: resourceId },
       }),
       prisma.customTableColumn.findFirst({
-        where: { id: columnId, tableId: params.id },
+        where: { id: columnId, tableId: resourceId },
       }),
     ]);
     if (!row || !column) {

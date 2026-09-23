@@ -4,13 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "node server.js",
-    "build": "next build",
+    "build": "node scripts/generate-client.cjs && next build --webpack",
     "start": "cross-env NODE_ENV=production node server.js",
-    "lint": "next lint",
+    "lint": "eslint app components lib --ext .ts,.tsx",
     "test": "vitest run",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "db:seed": "node scripts/seed-dev.js"
+    "db:seed": "node scripts/seed-dev.js",
+    "postinstall": "node scripts/generate-client.cjs"
   },
   "dependencies": {
     "@fontsource/geist": "^5.3.0",
@@ -34,7 +35,7 @@
     "framer-motion": "^11.11.17",
     "jose": "^5.9.6",
     "lucide-react": "^0.460.0",
-    "next": "14.2.18",
+    "next": "^16.3.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.2",
@@ -53,7 +54,7 @@
     "autoprefixer": "^10.4.20",
     "cross-env": "^10.1.0",
     "eslint": "^8.57.1",
-    "eslint-config-next": "^14.2.18",
+    "eslint-config-next": "^14.2.35",
     "postcss": "^8.4.49",
     "prisma": "^5.22.0",
     "tailwindcss": "^3.4.15",

@@ -4,8 +4,9 @@ import prisma from "@/lib/prisma";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -23,13 +24,13 @@ export async function POST(
     const rsvp = await prisma.eventRSVP.upsert({
       where: {
         eventId_userId: {
-          eventId: params.id,
+          eventId: resourceId,
           userId: user.id,
         },
       },
       update: { status },
       create: {
-        eventId: params.id,
+        eventId: resourceId,
         userId: user.id,
         status,
       },

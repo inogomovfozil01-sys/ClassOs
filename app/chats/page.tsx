@@ -122,12 +122,18 @@ export default function ChatsPage() {
     fetchConversations();
   }, []);
 
+  useEffect(()=>{
+    if(process.env.NEXT_PUBLIC_SERVERLESS!=="1")return;
+    const timer=setInterval(()=>{if(document.visibilityState!=="visible")return;void fetchConversations();if(activeConvId)void fetchMessages(activeConvId,messageQuery,true)},4000);
+    return ()=>clearInterval(timer);
+  },[activeConvId,messageQuery]);
+
   // 2. Fetch Messages when active conversation changes
   const messageRequest = useRef(0);
-  const fetchMessages = async (convId: string, query = messageQuery) => {
+  const fetchMessages = async (convId: string, query = messageQuery, quiet = false) => {
     const requestId = ++messageRequest.current;
     try {
-      setLoadingMessages(true);
+      if(!quiet)setLoadingMessages(true);
       const res = await fetch(
         `/api/conversations/${convId}/messages${query ? "?q=" + encodeURIComponent(query) : ""}`,
       );
@@ -150,7 +156,7 @@ export default function ChatsPage() {
             body: JSON.stringify({ messageId: data.messages.at(-1).id }),
           }).catch(() => {});
         setHasMore(Boolean(data.hasMore));
-        if (!query) scrollToBottom();
+        if (!query && !quiet) scrollToBottom();
       }
     } catch {
       toast.error("Не удалось загрузить сообщения");
@@ -789,7 +795,7 @@ export default function ChatsPage() {
                   Медиа
                 </button>
               </div>
-              {!isConnected && (
+              {!isConnected && process.env.NEXT_PUBLIC_SERVERLESS !== "1" && (
                 <p role="status" className="text-xs text-warning px-4 py-2">
                   Восстанавливаем соединение…
                 </p>

@@ -4,7 +4,7 @@ import { destroySession, SESSION_COOKIE_NAME } from "@/lib/auth/session";
 
 export async function POST() {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
     if (sessionToken) {
@@ -16,6 +16,6 @@ export async function POST() {
     return response;
   } catch (error: any) {
     console.error("Logout error:", error);
-    return NextResponse.json({ error: "Ошибка выхода" }, { status: 500 });
+    return NextResponse.json({ error: "РћС€РёР±РєР° РІС‹С…РѕРґР°" }, { status: 500 });
   }
 }

@@ -4,15 +4,16 @@ import prisma from "@/lib/prisma";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const {id: resourceId} = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
 
-    const post = await prisma.newsPost.findUnique({ where: { id: params.id } });
+    const post = await prisma.newsPost.findUnique({ where: { id: resourceId } });
     if (!post) {
       return NextResponse.json(
         { error: "Новость не найдена" },
@@ -37,7 +38,7 @@ export async function POST(
 
     const comment = await prisma.newsComment.create({
       data: {
-        postId: params.id,
+        postId: resourceId,
         authorId: user.id,
         content: content.trim(),
       },
