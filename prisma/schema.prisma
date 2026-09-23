@@ -1,0 +1,535 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  username           String    @unique
+  passwordHash       String
+  firstName          String
+  lastName           String
+  middleName         String?
+  role               String    @default("STUDENT") // OWNER, ADMIN, LEADER, TEACHER, STUDENT
+  avatarUrl          String?
+  isBlocked          Boolean   @default(false)
+  mustChangePassword Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  sessions           Session[]
+  teacherProfile     TeacherProfile?
+  homeworkStatuses   HomeworkStatus[]
+  newsPosts          NewsPost[]
+  newsComments       NewsComment[]
+  newsReactions      NewsReaction[]
+  eventRsvps         EventRSVP[]
+  pollVotes          PollVote[]
+  messages           Message[]
+  conversationMembers ConversationMember[]
+  messageReactions   MessageReaction[]
+  messageReports     MessageReport[]
+  blocksInitiated    UserBlock[]       @relation("BlockerRelation")
+  blocksReceived     UserBlock[]       @relation("BlockedRelation")
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+  fileAssets         FileAsset[]
+  folders            Folder[]
+  customTables       CustomTable[]
+  customTableRows    CustomTableRow[]
+  homeworkCreated    Homework[]        @relation("HomeworkCreator")
+  pollsCreated       Poll[]            @relation("PollCreator")
+  eventsCreated      ClassEvent[]      @relation("EventCreator")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model TeacherProfile {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  middleName  String?
+  subjectName String?
+  userId      String?  @unique
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  avatarUrl   String?
+  contact     String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subjects    Subject[]
+  lessons     ScheduleLesson[]
+}
+
+model Subject {
+  id                 String    @id @default(cuid())
+  name               String
+  shortName          String
+  color              String    @default("#6366f1")
+  icon               String?
+  teacherId          String?
+  teacher            TeacherProfile? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  defaultClassroomId String?
+  defaultClassroom   Classroom? @relation(fields: [defaultClassroomId], references: [id], onDelete: SetNull)
+  description        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  lessons            ScheduleLesson[]
+  homeworks          Homework[]
+  exams              Exam[]
+  folders            Folder[]
+  fileAssets         FileAsset[]
+}
+
+model Classroom {
+  id        String   @id @default(cuid())
+  number    String   // e.g. "Кабинет 302"
+  building  String?  // e.g. "Главный корпус"
+  floor     String?  // e.g. "3 этаж"
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subjects  Subject[]
+  lessons   ScheduleLesson[]
+}
+
+model ScheduleLesson {
+  id          String         @id @default(cuid())
+  dayOfWeek   Int            // 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+  startTime   String         // e.g. "08:30"
+  endTime     String         // e.g. "09:15"
+  subjectId   String
+  subject     Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacherId   String?
+  teacher     TeacherProfile? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  classroomId String?
+  classroom   Classroom?     @relation(fields: [classroomId], references: [id], onDelete: SetNull)
+  isRecurring Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  exceptions  ScheduleException[]
+
+  @@index([dayOfWeek])
+}
+
+model ScheduleException {
+  id          String          @id @default(cuid())
+  date        String          // "YYYY-MM-DD"
+  lessonId    String?
+  lesson      ScheduleLesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  action      String          // "MODIFIED", "CANCELLED", "MOVED", "EXTRA"
+  subjectId   String?
+  teacherId   String?
+  classroomId String?
+  startTime   String?
+  endTime     String?
+  note        String?
+  createdAt   DateTime        @default(now())
+
+  @@index([date])
+}
+
+model Homework {
+  id          String               @id @default(cuid())
+  subjectId   String
+  subject     Subject              @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  dueDate     DateTime
+  createdById String
+  createdBy   User                 @relation("HomeworkCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  attachments HomeworkAttachment[]
+  statuses    HomeworkStatus[]
+
+  @@index([dueDate])
+}
+
+model HomeworkAttachment {
+  id         String   @id @default(cuid())
+  homeworkId String
+  homework   Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  fileName   String
+  fileUrl    String
+  fileSize   Int
+  mimeType   String
+  createdAt  DateTime @default(now())
+}
+
+model HomeworkStatus {
+  id         String   @id @default(cuid())
+  homeworkId String
+  homework   Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status     String   @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, DONE
+  updatedAt  DateTime @updatedAt
+
+  @@unique([homeworkId, studentId])
+}
+
+model Exam {
+  id           String   @id @default(cuid())
+  subjectId    String
+  subject      Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  title        String
+  date         DateTime
+  topics       String?
+  materialsUrl String?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  @@index([date])
+}
+
+model Duty {
+  id         String   @id @default(cuid())
+  date       String   // "YYYY-MM-DD"
+  studentIds String   // JSON array of student user IDs
+  notes      String?
+  status     String   @default("SCHEDULED") // SCHEDULED, COMPLETED, REPLACED
+  createdAt  DateTime @default(now())
+
+  @@index([date])
+}
+
+model NewsPost {
+  id            String         @id @default(cuid())
+  title         String
+  content       String
+  category      String         @default("Общее")
+  coverUrl      String?
+  gallery       String?        // JSON array of image URLs
+  allowComments Boolean        @default(true)
+  authorId      String
+  author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  comments      NewsComment[]
+  reactions     NewsReaction[]
+}
+
+model NewsComment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      NewsPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+}
+
+model NewsReaction {
+  id        String   @id @default(cuid())
+  postId    String
+  post      NewsPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId, emoji])
+}
+
+model ClassEvent {
+  id          String      @id @default(cuid())
+  title       String
+  description String
+  date        String      // "YYYY-MM-DD"
+  time        String?     // e.g. "14:00"
+  location    String?
+  coverUrl    String?
+  rsvpEnabled Boolean     @default(true)
+  authorId    String
+  author      User        @relation("EventCreator", fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+
+  rsvps       EventRSVP[]
+
+  @@index([date])
+}
+
+model EventRSVP {
+  id        String     @id @default(cuid())
+  eventId   String
+  event     ClassEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String     // GOING, NOT_GOING, UNSURE
+  createdAt DateTime   @default(now())
+
+  @@unique([eventId, userId])
+}
+
+model Poll {
+  id          String       @id @default(cuid())
+  question    String
+  isMultiple  Boolean      @default(false)
+  isAnonymous Boolean      @default(false)
+  deadline    DateTime?
+  authorId    String
+  author      User         @relation("PollCreator", fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+
+  options     PollOption[]
+  votes       PollVote[]
+}
+
+model PollOption {
+  id        String     @id @default(cuid())
+  pollId    String
+  poll      Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text      String
+
+  votes     PollVote[]
+}
+
+model PollVote {
+  id        String     @id @default(cuid())
+  pollId    String
+  poll      Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId  String
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  @@unique([pollId, optionId, userId])
+}
+
+model Folder {
+  id          String      @id @default(cuid())
+  name        String
+  parentId    String?
+  parent      Folder?     @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  subfolders  Folder[]    @relation("FolderHierarchy")
+  subjectId   String?
+  subject     Subject?    @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  createdById String
+  createdBy   User        @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+
+  files       FileAsset[]
+}
+
+model FileAsset {
+  id          String   @id @default(cuid())
+  folderId    String?
+  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  subjectId   String?
+  subject     Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  name        String
+  size        Int
+  mimeType    String
+  storagePath String
+  uploaderId  String
+  uploader    User     @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([folderId])
+  @@index([subjectId])
+}
+
+model CustomTable {
+  id          String              @id @default(cuid())
+  title       String
+  description String?
+  createdById String
+  createdBy   User                @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  columns     CustomTableColumn[]
+  rows        CustomTableRow[]
+}
+
+model CustomTableColumn {
+  id         String            @id @default(cuid())
+  tableId    String
+  table      CustomTable       @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  title      String
+  type       String            // TEXT, NUMBER, DATE, BOOLEAN, STATUS, STUDENT, TEACHER, SUBJECT, CURRENCY, COMMENT
+  orderIndex Int               @default(0)
+  config     String?           // JSON configuration (e.g. status options)
+
+  cells      CustomTableCell[]
+
+  @@index([tableId])
+}
+
+model CustomTableRow {
+  id         String            @id @default(cuid())
+  tableId    String
+  table      CustomTable       @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  studentId  String?
+  student    User?             @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  orderIndex Int               @default(0)
+
+  cells      CustomTableCell[]
+
+  @@index([tableId])
+}
+
+model CustomTableCell {
+  id       String            @id @default(cuid())
+  rowId    String
+  row      CustomTableRow    @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  columnId String
+  column   CustomTableColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  value    String?
+
+  @@unique([rowId, columnId])
+}
+
+model Conversation {
+  id          String               @id @default(cuid())
+  type        String               @default("DIRECT") // DIRECT, GROUP, CLASS
+  name        String?
+  avatarUrl   String?
+  createdById String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  members     ConversationMember[]
+  messages    Message[]
+}
+
+model ConversationMember {
+  id                  String       @id @default(cuid())
+  conversationId      String
+  conversation        Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId              String
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role                String       @default("MEMBER") // ADMIN, MEMBER
+  lastReadMessageId   String?
+  joinedAt            DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             String              @id @default(cuid())
+  conversationId String
+  conversation   Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User                @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content        String
+  type           String              @default("TEXT") // TEXT, IMAGE, VIDEO, AUDIO_VOICE, FILE, SYSTEM
+  replyToId      String?
+  isForwarded    Boolean             @default(false)
+  editedAt       DateTime?
+  isDeleted      Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+
+  attachments    MessageAttachment[]
+  reactions      MessageReaction[]
+  reports        MessageReport[]
+
+  @@index([conversationId, createdAt])
+}
+
+model MessageAttachment {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  fileName  String
+  fileUrl   String
+  fileSize  Int
+  mimeType  String
+  waveform  String?  // JSON array of normalized audio amplitude samples
+  createdAt DateTime @default(now())
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId, emoji])
+}
+
+model MessageReport {
+  id          String   @id @default(cuid())
+  messageId   String
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  reporterId  String
+  reporter    User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  reason      String
+  status      String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  createdAt   DateTime @default(now())
+}
+
+model UserBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("BlockerRelation", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("BlockedRelation", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // HOMEWORK, SCHEDULE, NEWS, EVENT, DUTY, SYSTEM, MESSAGE
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String   // e.g. "USER_ROLE_CHANGED", "SCHEDULE_UPDATED", "PASSWORD_RESET"
+  entity    String   // "USER", "SCHEDULE", "HOMEWORK", "TABLE"
+  entityId  String?
+  details   String?  // JSON before/after state
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entity])
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
