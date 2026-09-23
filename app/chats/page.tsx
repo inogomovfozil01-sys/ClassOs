@@ -144,7 +144,12 @@ export default function ChatsPage() {
           requestId !== messageRequest.current
         )
           return;
-        setMessages(data.messages || []);
+        const incoming = data.messages || [];
+        setMessages((previous) => {
+          if (!quiet || !incoming.length) return incoming;
+          const firstIndex = previous.findIndex((message) => message.id === incoming[0].id);
+          return firstIndex > 0 ? [...previous.slice(0, firstIndex), ...incoming] : incoming;
+        });
         if (
           !query &&
           data.messages?.length &&
@@ -155,7 +160,7 @@ export default function ChatsPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ messageId: data.messages.at(-1).id }),
           }).catch(() => {});
-        setHasMore(Boolean(data.hasMore));
+        if (!quiet) setHasMore(Boolean(data.hasMore));
         if (!query && !quiet) scrollToBottom();
       }
     } catch {
