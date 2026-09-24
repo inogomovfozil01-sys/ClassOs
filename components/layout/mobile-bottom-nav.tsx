@@ -105,15 +105,6 @@ export function MobileBottomNav() {
           </button>
         )}
       </Sheet>
-      {isLeaderOrHigher(user?.role) && (
-        <button
-          className="quick-add-mobile"
-          aria-label="Добавить в класс"
-          onClick={() => setQuick(true)}
-        >
-          <Plus size={22} />
-        </button>
-      )}
       <QuickActionSheet isOpen={quick} onClose={() => setQuick(false)} />
     </>
   );

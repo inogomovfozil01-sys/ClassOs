@@ -1772,3 +1772,176 @@ p {
   font-size: 13px;
   margin-top: 20px;
 }
+
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--accent-muted);
+  color: var(--foreground);
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: middle;
+}
+.user-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatar-editor {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+@media (max-width: 479px) {
+  .avatar-editor {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
+
+/* Keep the app frame stationary; each workspace owns its vertical scrolling. */
+@media screen {
+  html:has(.app-shell),
+  body:has(.app-shell) {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  .app-shell {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    align-items: stretch;
+  }
+  .app-sidebar {
+    height: 100%;
+    min-height: 0;
+    top: 0;
+  }
+  .workspace {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    max-width: 100%;
+  }
+  .workspace-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+  .topbar {
+    flex-shrink: 0;
+  }
+  .workspace-content:has(> .messenger) {
+    display: flex;
+    flex-direction: column;
+  }
+  .workspace-content > .messenger {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+    width: 100%;
+  }
+}
+.page-heading {
+  flex-wrap: wrap;
+}
+.page-heading > div,
+.toolbar-actions,
+.table-toolbar,
+.field,
+.form-stack,
+.section-heading > div {
+  min-width: 0;
+  max-width: 100%;
+}
+.toolbar-actions {
+  flex-shrink: 1;
+}
+.button {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.button > svg,
+.icon-button > svg {
+  flex-shrink: 0;
+}
+.topbar-actions {
+  flex-shrink: 0;
+}
+.topbar a[aria-label="Профиль"] {
+  padding: 2px;
+}
+.table-search {
+  min-width: 0;
+}
+.table-search input,
+.field input,
+.field textarea,
+.field select,
+.control {
+  min-width: 0;
+  max-width: 100%;
+}
+.section-heading {
+  flex-wrap: wrap;
+}
+.dialog-heading {
+  min-width: 0;
+  gap: 12px;
+  align-items: flex-start;
+}
+.dialog-heading > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dialog-content {
+  overscroll-behavior: contain;
+}
+.content-tabs {
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+}
+.register-scroll {
+  overscroll-behavior: contain;
+}
+@media (min-width: 768px) and (max-width: 1100px) {
+  .messenger aside {
+    width: 210px;
+  }
+}
+@media (max-width: 767px) {
+  .workspace-content {
+    padding-bottom: 24px;
+    scrollbar-gutter: auto;
+  }
+  .workspace {
+    height: calc(100% - 84px - env(safe-area-inset-bottom));
+  }
+  .topbar {
+    padding-left: 12px;
+    padding-right: 12px;
+    gap: 6px;
+  }
+  .topbar-actions {
+    gap: 4px;
+  }
+  .toolbar-actions {
+    width: 100%;
+  }
+  .messenger.conversation-open {
+    height: 100dvh;
+    flex: none;
+  }
+}

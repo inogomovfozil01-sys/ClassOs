@@ -1,4 +1,5 @@
 "use client";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 import React, { useState, useEffect, useRef } from "react";
 import { AppShell } from "@/components/layout/app-shell";
@@ -701,7 +702,7 @@ export default function ChatsPage() {
                           {conv.type === "CLASS" ? (
                             <Users className="w-5 h-5 text-accent" />
                           ) : (
-                            conv.name.slice(0, 2).toUpperCase()
+                            <UserAvatar src={conv.avatarUrl} name={conv.name} size={44} />
                           )}
                         </div>
                         {isOtherOnline && (

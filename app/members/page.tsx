@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { useRouter } from "next/navigation";
 import { MessageSquare, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -95,10 +96,7 @@ export default function MembersPage() {
           const account = tab === "teachers" ? p.user?.id : p.id;
           return (
             <div className="member-row" key={p.id}>
-              <div className="brand-mark">
-                {p.firstName[0]}
-                {p.lastName[0]}
-              </div>
+              <UserAvatar src={p.user?.avatarUrl || p.avatarUrl} name={`${p.firstName} ${p.lastName}`} />
               <div className="min-w-0 flex-1">
                 <strong>
                   {p.lastName} {p.firstName} {p.middleName || ""}

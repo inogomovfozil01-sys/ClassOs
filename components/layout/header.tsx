@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Search, Command, User } from "lucide-react";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 import { useAuth } from "@/components/providers/auth-context";
@@ -42,7 +43,7 @@ export function Header({
         )}
         <NotificationCenter />
         <Link href="/profile" className="icon-button" aria-label="Профиль">
-          <User size={16} />
+          <UserAvatar src={user?.avatarUrl} name={user?.firstName || user?.username || "Профиль"} size={28} />
         </Link>
       </div>
     </header>

@@ -1,4 +1,5 @@
 "use client";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -111,8 +112,8 @@ export function DesktopSidebar() {
         )}
       </nav>
       <div className="sidebar-profile">
-        <Link href="/profile" aria-label="Профиль" className="brand-mark">
-          {(user.firstName || user.username).slice(0, 1).toUpperCase()}
+        <Link href="/profile" aria-label="Профиль" className="shrink-0 rounded-full">
+          <UserAvatar src={user.avatarUrl} name={user.firstName || user.username} />
         </Link>
         {!collapsed && (
           <Link href="/profile" className="min-w-0 flex-1">

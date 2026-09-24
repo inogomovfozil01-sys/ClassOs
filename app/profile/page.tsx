@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { AvatarEditor } from "@/components/profile/avatar-editor";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/ui/workspace";
@@ -60,6 +61,7 @@ export default function ProfilePage() {
         }
       />
       <div className="max-w-lg space-y-8">
+        <AvatarEditor />
         <section className="space-y-5">
           <h2 className="text-sm font-semibold">Оформление</h2>
           <ThemeSelect />

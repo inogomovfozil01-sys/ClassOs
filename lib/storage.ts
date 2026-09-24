@@ -80,3 +80,9 @@ export async function readStoredFile(key:string):Promise<Buffer|null>{
   if(process.env.VERCEL){const stored=await prisma.storedFile.findUnique({where:{key}});return stored?Buffer.from(stored.data):null;}
   const filePath=getFilePath(key);return filePath?fs.promises.readFile(filePath):null;
 }
+
+export async function removeStoredFile(key: string) {
+  if (path.basename(key) !== key) throw Error('Invalid storage key');
+  if (process.env.VERCEL) await prisma.storedFile.deleteMany({where: {key}});
+  else await fs.promises.unlink(path.join(UPLOAD_DIR, key)).catch((error) => {if (error.code !== 'ENOENT') throw error;});
+}
