@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { RefreshCw, KeyRound, Eye, EyeOff, Search } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import {
@@ -389,7 +390,12 @@ export default function EmaktabPage() {
             {!teacherAvailable && (
               <p role="status" className="text-warning">
                 Классный руководитель ещё не добавлен. Попросите администратора
-                назначить его в разделе «Наш класс».
+                создать для него аккаунт с ролью «Классный руководитель».
+                {(user?.role === "OWNER" || user?.role === "ADMIN") && (
+                  <Link className="block underline mt-2" href="/admin/users">
+                    Открыть управление пользователями
+                  </Link>
+                )}
               </p>
             )}
           </section>
