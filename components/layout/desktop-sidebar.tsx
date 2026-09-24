@@ -43,7 +43,7 @@ export const schoolLinks = [
   { href: "/today", label: "Сегодня", icon: Clock },
   { href: "/tests", label: "Контрольные", icon: CheckSquare },
   { href: "/duty", label: "Дежурства", icon: Users },
-  { href: "/emaktab", label: "Доступ к eMaktab", icon: CheckSquare },
+  { href: "/emaktab", label: "Забыл пароль", icon: CheckSquare },
   { href: "/ai", label: "Учебный помощник", icon: Command },
 ];
 export function DesktopSidebar() {

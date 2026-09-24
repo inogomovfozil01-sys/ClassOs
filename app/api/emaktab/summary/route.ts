@@ -1,37 +1,43 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
-import { isTeacherOrHigher } from "@/lib/auth/rbac";
 const store = require("@/lib/emaktab-store.cjs");
+const headers = { "Cache-Control": "private, no-store, max-age=0" };
 export async function GET() {
   const user = await getCurrentUser();
-  if (!user || !isTeacherOrHigher(user.role))
+  if (!user || user.role !== "TEACHER")
     return NextResponse.json(
-      {
-        error:
-          "Сводка доступна классному руководителю, старосте и администраторам",
-      },
-      { status: 403 },
+      { error: "Заявки доступны только классному руководителю" },
+      { status: 403, headers },
     );
-  const [users, settings] = await Promise.all([
-    prisma.user.findMany({
-      where: { role: { in: store.STUDENT_ROLES }, isBlocked: false },
-      select: { id: true, firstName: true, lastName: true, role: true },
-      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-    }),
-    prisma.systemSetting.findMany({
-      where: { key: { startsWith: store.PREFIX } },
-    }),
-  ]);
-  const records = new Map(
-    settings.map((s) => [s.key, store.parseRecord(s.value)]),
-  );
-  return NextResponse.json({
-    rows: users.map((u) => ({
-      ...u,
-      ...store.present(
-        records.get(store.PREFIX + u.id) || store.initialRecord(new Date()),
-      ),
-    })),
+  const settings = await prisma.systemSetting.findMany({
+    where: { key: { startsWith: store.PREFIX } },
+    orderBy: { updatedAt: "desc" },
   });
+  const users = await prisma.user.findMany({
+    where: {
+      id: { in: settings.map((s) => s.key.slice(store.PREFIX.length)) },
+      isBlocked: false,
+    },
+    select: { id: true, firstName: true, lastName: true },
+  });
+  const people = new Map(users.map((u) => [u.id, u]));
+  return NextResponse.json(
+    {
+      rows: settings.flatMap((s) => {
+        const pupil = people.get(s.key.slice(store.PREFIX.length));
+        return pupil
+          ? [
+              {
+                ...store.present(store.parseRecord(s.value)),
+                userId: pupil.id,
+                firstName: pupil.firstName,
+                lastName: pupil.lastName,
+              },
+            ]
+          : [];
+      }),
+    },
+    { headers },
+  );
 }
