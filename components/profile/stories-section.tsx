@@ -53,69 +53,6 @@ const GRADIENT_PRESETS = [
 
 const EMOJI_STICKERS = ["🔥", "❤️", "✨", "📚", "⚽", "🍕", "🎧", "⚡", "🎉", "🏆"];
 
-const DEFAULT_CLASS_STORIES: StoryGroup[] = [
-  {
-    userId: "class-1",
-    userName: "Мадина С.",
-    userRole: "Ученик",
-    avatarUrl: "",
-    hasUnseen: true,
-    stories: [
-      {
-        id: "story-c1-1",
-        userId: "class-1",
-        authorName: "Мадина С.",
-        authorRole: "Ученица 7-«А»",
-        gradient: "from-purple-600 via-indigo-600 to-blue-600",
-        text: "Сделала конспект по биологии на завтра! Если кому-то нужно сверить — пишите в чат 🌿📖",
-        sticker: "📚",
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        viewsCount: 14,
-      },
-    ],
-  },
-  {
-    userId: "class-2",
-    userName: "Шахзод Б.",
-    userRole: "Ученик",
-    avatarUrl: "",
-    hasUnseen: true,
-    stories: [
-      {
-        id: "story-c2-1",
-        userId: "class-2",
-        authorName: "Шахзод Б.",
-        authorRole: "Ученик 7-«А»",
-        gradient: "from-orange-500 via-rose-500 to-purple-600",
-        text: "Кто идет на футбольную тренировку после 6-го урока? Собираемся на школьном поле ⚽🔥",
-        sticker: "⚽",
-        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        viewsCount: 19,
-      },
-    ],
-  },
-  {
-    userId: "class-3",
-    userName: "7-«А» Класс",
-    userRole: "Лидер класса",
-    avatarUrl: "",
-    hasUnseen: true,
-    stories: [
-      {
-        id: "story-c3-1",
-        userId: "class-3",
-        authorName: "7-«А» Класс",
-        authorRole: "Официально",
-        gradient: "from-emerald-500 via-teal-600 to-cyan-600",
-        text: "Напоминание: в пятницу генеральная уборка кабинета и дежурство нашей группы ✨",
-        sticker: "⚡",
-        createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-        viewsCount: 26,
-      },
-    ],
-  },
-];
-
 export function StoriesSection({
   currentUser,
 }: {
@@ -129,7 +66,7 @@ export function StoriesSection({
   } | null;
 }) {
   const [userStories, setUserStories] = useState<StoryItem[]>([]);
-  const [classStoryGroups, setClassStoryGroups] = useState<StoryGroup[]>(DEFAULT_CLASS_STORIES);
+  const [classStoryGroups, setClassStoryGroups] = useState<StoryGroup[]>([]);
 
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -149,34 +86,40 @@ export function StoriesSection({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load user stories from localStorage
-  useEffect(() => {
-    if (!currentUser?.id) return;
+  // Fetch real stories from API
+  const fetchRealStories = async () => {
     try {
-      const saved = localStorage.getItem(`classos_stories_${currentUser.id}`);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          // Keep only stories newer than 24h
-          const now = Date.now();
-          const valid = parsed.filter(
-            (s: StoryItem) => now - new Date(s.createdAt).getTime() < 24 * 60 * 60 * 1000,
-          );
-          setUserStories(valid);
+      const res = await fetch("/api/stories");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.groups && Array.isArray(data.groups)) {
+          // Find current user's stories from backend
+          const myGroup = data.groups.find((g: StoryGroup) => g.userId === currentUser?.id);
+          if (myGroup) {
+            setUserStories(myGroup.stories);
+          } else {
+            setUserStories([]);
+          }
+
+          // Other classmates' real stories
+          const otherGroups = data.groups.filter((g: StoryGroup) => g.userId !== currentUser?.id);
+          setClassStoryGroups(otherGroups);
         }
       }
-    } catch {}
-  }, [currentUser?.id]);
-
-  // Save user stories
-  const persistUserStories = (updated: StoryItem[]) => {
-    setUserStories(updated);
-    if (currentUser?.id) {
-      try {
-        localStorage.setItem(`classos_stories_${currentUser.id}`, JSON.stringify(updated));
-      } catch {}
+    } catch (err) {
+      console.error("Failed to load real stories:", err);
     }
   };
+
+  useEffect(() => {
+    fetchRealStories();
+    // Clean up any old mock keys from localStorage
+    try {
+      localStorage.removeItem("classos_stories_class-1");
+      localStorage.removeItem("classos_stories_class-2");
+      localStorage.removeItem("classos_stories_class-3");
+    } catch {}
+  }, [currentUser?.id]);
 
   // Story Viewer Timer
   useEffect(() => {
@@ -276,7 +219,7 @@ export function StoriesSection({
     }
   };
 
-  const handleCreateStory = (e: React.FormEvent) => {
+  const handleCreateStory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newStoryText.trim() && !newStoryImage) {
       toast.error("Напишите текст или прикрепите фото");
@@ -285,49 +228,61 @@ export function StoriesSection({
 
     setIsSubmitting(true);
     try {
-      const newStory: StoryItem = {
-        id: `story-${Date.now()}`,
-        userId: currentUser?.id || "me",
-        authorName: `${currentUser?.firstName || ""} ${currentUser?.lastName || ""}`.trim() || "Я",
-        authorRole: currentUser?.role || "Ученик 7-«А»",
-        avatarUrl: currentUser?.avatarUrl,
-        gradient: newStoryGradient,
-        mediaUrl: newStoryImage || undefined,
-        text: newStoryText.trim() || undefined,
-        sticker: newStorySticker,
-        createdAt: new Date().toISOString(),
-        viewsCount: 1,
-      };
+      const res = await fetch("/api/stories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: newStoryText.trim() || undefined,
+          gradient: newStoryGradient,
+          sticker: newStorySticker,
+          mediaUrl: newStoryImage || undefined,
+        }),
+      });
 
-      const updated = [newStory, ...userStories];
-      persistUserStories(updated);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Не удалось опубликовать историю");
+      }
 
       toast.success("История опубликована на 24 часа! 🔥");
       setIsCreateOpen(false);
       setNewStoryText("");
       setNewStoryImage(null);
       setNewStorySticker("🔥");
-    } catch {
-      toast.error("Не удалось опубликовать историю");
+      await fetchRealStories();
+    } catch (err: any) {
+      toast.error(err.message || "Не удалось опубликовать историю");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDeleteCurrentStory = () => {
+  const handleDeleteCurrentStory = async () => {
     if (!activeViewerGroup || activeViewerGroup.userId !== currentUser?.id) return;
     const currentStory = activeViewerGroup.stories[activeStoryIndex];
     if (!currentStory) return;
 
-    const remaining = userStories.filter((s) => s.id !== currentStory.id);
-    persistUserStories(remaining);
-    toast.success("История удалена");
+    try {
+      const res = await fetch(`/api/stories?id=${currentStory.id}`, {
+        method: "DELETE",
+      });
 
-    if (remaining.length === 0) {
-      setActiveViewerGroup(null);
-    } else {
-      setActiveStoryIndex(Math.max(0, activeStoryIndex - 1));
-      setStoryProgress(0);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Не удалось удалить историю");
+      }
+
+      toast.success("История удалена");
+      await fetchRealStories();
+
+      if (activeViewerGroup.stories.length <= 1) {
+        setActiveViewerGroup(null);
+      } else {
+        setActiveStoryIndex(Math.max(0, activeStoryIndex - 1));
+        setStoryProgress(0);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Не удалось удалить историю");
     }
   };
 
@@ -457,34 +412,41 @@ export function StoriesSection({
         </div>
 
         {/* Classmates Stories */}
-        {classStoryGroups.map((group) => {
-          return (
-            <div
-              key={group.userId}
-              onClick={() => handleOpenGroup(group)}
-              className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group"
-            >
+        {classStoryGroups.length > 0 ? (
+          classStoryGroups.map((group) => {
+            return (
               <div
-                className={`relative p-[3px] rounded-full transition-all duration-300 group-hover:scale-105 active:scale-95 ${
-                  group.hasUnseen
-                    ? "bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 shadow-md shadow-rose-500/20"
-                    : "border-2 border-border bg-surface-elevated"
-                }`}
+                key={group.userId}
+                onClick={() => handleOpenGroup(group)}
+                className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group"
               >
-                <div className="rounded-full p-0.5 bg-surface">
-                  <UserAvatar src={group.avatarUrl} name={group.userName} size={58} />
+                <div
+                  className={`relative p-[3px] rounded-full transition-all duration-300 group-hover:scale-105 active:scale-95 ${
+                    group.hasUnseen
+                      ? "bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 shadow-md shadow-rose-500/20"
+                      : "border-2 border-border bg-surface-elevated"
+                  }`}
+                >
+                  <div className="rounded-full p-0.5 bg-surface">
+                    <UserAvatar src={group.avatarUrl} name={group.userName} size={58} />
+                  </div>
+                  {/* Unseen indicator dot */}
+                  {group.hasUnseen && (
+                    <span className="absolute top-0 right-0 w-3 h-3 rounded-full bg-accent border-2 border-surface" />
+                  )}
                 </div>
-                {/* Unseen indicator dot */}
-                {group.hasUnseen && (
-                  <span className="absolute top-0 right-0 w-3 h-3 rounded-full bg-accent border-2 border-surface" />
-                )}
+                <span className="text-[11px] font-medium text-foreground max-w-[68px] truncate text-center group-hover:text-accent transition-colors">
+                  {group.userName.split(" ")[0]}
+                </span>
               </div>
-              <span className="text-[11px] font-medium text-foreground max-w-[68px] truncate text-center group-hover:text-accent transition-colors">
-                {group.userName.split(" ")[0]}
-              </span>
-            </div>
-          );
-        })}
+            );
+          })
+        ) : (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-surface-elevated/40 border border-border/60 text-xs text-foreground-muted select-none">
+            <Sparkles size={13} className="text-accent shrink-0" />
+            <span className="text-[11px]">Истории одноклассников появятся здесь</span>
+          </div>
+        )}
       </div>
 
       {/* ========================================================

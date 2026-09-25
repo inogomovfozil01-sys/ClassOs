@@ -9,6 +9,7 @@ import prisma from "@/lib/prisma";
 import { canManageUsers } from "@/lib/auth/rbac";
 import { hashPassword } from "@/lib/auth/password";
 import { logAuditEvent } from "@/lib/audit";
+import { isValidLatinName } from "@/lib/username-ai";
 
 export async function GET() {
   try {
@@ -59,6 +60,19 @@ export async function POST(req: Request) {
     if (!firstName || !lastName || !username || !tempPassword || !role) {
       return NextResponse.json(
         { error: "Заполните все обязательные поля" },
+        { status: 400 },
+      );
+    }
+
+    const cleanFirst = String(firstName).trim();
+    const cleanLast = String(lastName).trim();
+
+    if (!isValidLatinName(cleanFirst) || !isValidLatinName(cleanLast)) {
+      return NextResponse.json(
+        {
+          error:
+            "Имя и фамилия должны быть написаны только английскими буквами (латиницей, например: Shakhzod Bakhodirov)",
+        },
         { status: 400 },
       );
     }

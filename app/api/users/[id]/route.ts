@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
 import { canManageUsers } from "@/lib/auth/rbac";
 import { logAuditEvent } from "@/lib/audit";
+import { isValidLatinName } from "@/lib/username-ai";
 
 export async function PATCH(
   req: Request,
@@ -47,8 +48,32 @@ export async function PATCH(
     const { firstName, lastName, middleName, role, isBlocked } = body;
 
     const data: any = {};
-    if (typeof firstName === "string") data.firstName = firstName.trim();
-    if (typeof lastName === "string") data.lastName = lastName.trim();
+    if (typeof firstName === "string") {
+      const clean = firstName.trim();
+      if (!isValidLatinName(clean)) {
+        return NextResponse.json(
+          {
+            error:
+              "Имя должно быть написано только английскими буквами (латиницей, например: Shakhzod)",
+          },
+          { status: 400 },
+        );
+      }
+      data.firstName = clean;
+    }
+    if (typeof lastName === "string") {
+      const clean = lastName.trim();
+      if (!isValidLatinName(clean)) {
+        return NextResponse.json(
+          {
+            error:
+              "Фамилия должна быть написана только английскими буквами (латиницей, например: Bakhodirov)",
+          },
+          { status: 400 },
+        );
+      }
+      data.lastName = clean;
+    }
     if (typeof middleName === "string") data.middleName = middleName.trim() || null;
 
     if (typeof isBlocked === "boolean") {

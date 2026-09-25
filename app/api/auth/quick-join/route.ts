@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth/password";
 import { createSession, SESSION_COOKIE_NAME } from "@/lib/auth/session";
-import { generateSmartUsername } from "@/lib/username-ai";
+import { generateSmartUsername, isValidLatinName } from "@/lib/username-ai";
 import { syncTableMembers } from "@/lib/table-members";
 import { logAuditEvent } from "@/lib/audit";
 
@@ -22,6 +22,16 @@ export async function POST(req: Request) {
 
     const cleanFirst = firstName.trim();
     const cleanLast = lastName.trim();
+
+    if (!isValidLatinName(cleanFirst) || !isValidLatinName(cleanLast)) {
+      return NextResponse.json(
+        {
+          error:
+            "Имя и фамилия должны быть написаны только английскими буквами (латиницей, например: Shakhzod Bakhodirov)",
+        },
+        { status: 400 },
+      );
+    }
 
     let finalUsername = chosenUsername?.trim()?.toLowerCase();
 

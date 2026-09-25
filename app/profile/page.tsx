@@ -40,6 +40,11 @@ import {
   Bell,
   RefreshCw,
 } from "lucide-react";
+import {
+  isValidLatinName,
+  containsCyrillic,
+  transliterateToLatinName,
+} from "@/lib/username-ai";
 
 export default function ProfilePage() {
   const { user, refreshUser, logout } = useAuth();
@@ -95,8 +100,18 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!user) return;
 
-    if (!firstName.trim() || !lastName.trim()) {
+    const cleanFirst = firstName.trim();
+    const cleanLast = lastName.trim();
+
+    if (!cleanFirst || !cleanLast) {
       toast.error("Имя и фамилия не могут быть пустыми");
+      return;
+    }
+
+    if (!isValidLatinName(cleanFirst) || !isValidLatinName(cleanLast)) {
+      toast.error(
+        "Имя и фамилия должны быть написаны только английскими буквами (латиницей, например: Shakhzod Bakhodirov)",
+      );
       return;
     }
 
@@ -106,8 +121,8 @@ export default function ProfilePage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
+          firstName: cleanFirst,
+          lastName: cleanLast,
           middleName: middleName.trim() || null,
         }),
       });
@@ -456,37 +471,103 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1.5">
-                    Имя <span className="text-danger">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-foreground">
+                      Имя <span className="text-accent font-normal">(English)</span> <span className="text-danger">*</span>
+                    </label>
+                    {firstName.trim() && (
+                      <span
+                        className={`text-[10px] font-medium ${
+                          isValidLatinName(firstName) ? "text-emerald-500" : "text-amber-500"
+                        }`}
+                      >
+                        {isValidLatinName(firstName) ? "✓ English" : "Латиница A-Z"}
+                      </span>
+                    )}
+                  </div>
                   <div className="relative">
                     <User className="w-4 h-4 text-foreground-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       required
-                      placeholder="Имя"
+                      placeholder="напр. Shakhzod"
                       value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      className="w-full bg-surface-elevated border border-border rounded-2xl pl-10 pr-3.5 py-2.5 text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:border-accent transition-colors text-sm"
+                      onChange={(e) => {
+                        setFirstName(e.target.value);
+                        setIsNameDirty(true);
+                      }}
+                      className={`w-full bg-surface-elevated border rounded-2xl pl-10 pr-3.5 py-2.5 text-foreground placeholder:text-foreground-muted/60 focus:outline-none transition-colors text-sm ${
+                        containsCyrillic(firstName)
+                          ? "border-amber-500 focus:border-amber-600 bg-amber-500/5"
+                          : "border-border focus:border-accent"
+                      }`}
                     />
                   </div>
+                  {containsCyrillic(firstName) && (
+                    <div className="mt-1.5 flex items-center justify-between gap-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-600 dark:text-amber-400 animate-fade-in">
+                      <span>Русские буквы</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFirstName(transliterateToLatinName(firstName));
+                          setIsNameDirty(true);
+                        }}
+                        className="px-2 py-0.5 rounded-lg bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors shrink-0"
+                      >
+                        Перевести в {transliterateToLatinName(firstName)}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1.5">
-                    Фамилия <span className="text-danger">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-foreground">
+                      Фамилия <span className="text-accent font-normal">(English)</span> <span className="text-danger">*</span>
+                    </label>
+                    {lastName.trim() && (
+                      <span
+                        className={`text-[10px] font-medium ${
+                          isValidLatinName(lastName) ? "text-emerald-500" : "text-amber-500"
+                        }`}
+                      >
+                        {isValidLatinName(lastName) ? "✓ English" : "Латиница A-Z"}
+                      </span>
+                    )}
+                  </div>
                   <div className="relative">
                     <User className="w-4 h-4 text-foreground-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       required
-                      placeholder="Фамилия"
+                      placeholder="напр. Bakhodirov"
                       value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      className="w-full bg-surface-elevated border border-border rounded-2xl pl-10 pr-3.5 py-2.5 text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:border-accent transition-colors text-sm"
+                      onChange={(e) => {
+                        setLastName(e.target.value);
+                        setIsNameDirty(true);
+                      }}
+                      className={`w-full bg-surface-elevated border rounded-2xl pl-10 pr-3.5 py-2.5 text-foreground placeholder:text-foreground-muted/60 focus:outline-none transition-colors text-sm ${
+                        containsCyrillic(lastName)
+                          ? "border-amber-500 focus:border-amber-600 bg-amber-500/5"
+                          : "border-border focus:border-accent"
+                      }`}
                     />
                   </div>
+                  {containsCyrillic(lastName) && (
+                    <div className="mt-1.5 flex items-center justify-between gap-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-600 dark:text-amber-400 animate-fade-in">
+                      <span>Русские буквы</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLastName(transliterateToLatinName(lastName));
+                          setIsNameDirty(true);
+                        }}
+                        className="px-2 py-0.5 rounded-lg bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors shrink-0"
+                      >
+                        Перевести в {transliterateToLatinName(lastName)}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="sm:col-span-2">

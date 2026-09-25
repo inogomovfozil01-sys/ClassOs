@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { transliterate, generateSmartUsername } from "../lib/username-ai";
+import {
+  transliterate,
+  generateSmartUsername,
+  isValidLatinName,
+  containsCyrillic,
+  transliterateToLatinName,
+} from "../lib/username-ai";
 
 vi.mock("../lib/ai/gemini-client", () => ({
   getGeminiClient: vi.fn().mockReturnValue(null),
@@ -13,6 +19,32 @@ describe("Smart username generation and transliteration", () => {
     expect(transliterate("Фозил")).toBe("fozil");
     expect(transliterate("Иноғомов")).toBe("inogomov");
     expect(transliterate("Шерзод")).toBe("sherzod");
+  });
+
+  it("transliterates capitalized names to readable Latin names", () => {
+    expect(transliterateToLatinName("Фирдавс")).toBe("Firdavs");
+    expect(transliterateToLatinName("Баходиров")).toBe("Bahodirov");
+    expect(transliterateToLatinName("Шахзод")).toBe("Shahzod");
+  });
+
+  it("strictly validates English / Latin names and detects Cyrillic", () => {
+    expect(isValidLatinName("Shakhzod")).toBe(true);
+    expect(isValidLatinName("Bakhodirov")).toBe(true);
+    expect(isValidLatinName("O'Connor")).toBe(true);
+    expect(isValidLatinName("Ali-Reza")).toBe(true);
+    expect(isValidLatinName("Madina")).toBe(true);
+
+    // Rejects Cyrillic and symbols
+    expect(isValidLatinName("Шахзод")).toBe(false);
+    expect(isValidLatinName("Баходиров")).toBe(false);
+    expect(isValidLatinName("John123")).toBe(false);
+    expect(isValidLatinName("")).toBe(false);
+    expect(isValidLatinName("A")).toBe(false);
+
+    // Cyrillic detection
+    expect(containsCyrillic("Фирдавс")).toBe(true);
+    expect(containsCyrillic("Firdavs")).toBe(false);
+    expect(containsCyrillic("Firdavs Баходиров")).toBe(true);
   });
 
   it("generates a clean valid username from first and last name", async () => {
@@ -35,3 +67,4 @@ describe("Smart username generation and transliteration", () => {
     expect(resEmpty.username.length).toBeGreaterThan(0);
   });
 });
+
