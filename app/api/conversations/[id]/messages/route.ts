@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
+import { getSticker } from "@/lib/chat-expressions";
 
 export async function GET(
   req: Request,
@@ -178,6 +179,10 @@ export async function POST(
 
     const body = await req.json();
     const { content, type, replyToId, attachments } = body;
+
+    if (type === "STICKER" && (!getSticker(content) || attachments?.length)) {
+      return NextResponse.json({ error: "Выберите стикер из набора ClassOS" }, { status: 400 });
+    }
 
     if (!content && (!attachments || attachments.length === 0)) {
       return NextResponse.json(

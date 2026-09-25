@@ -57,6 +57,9 @@ import {
   setConversationMuted,
 } from "@/lib/chat-notifications";
 
+import { ExpressionPicker } from "@/components/messenger/expression-picker";
+import { getSticker } from "@/lib/chat-expressions";
+
 const EMOJIS = ["👍", "❤️", "🔥", "😂", "👏"];
 
 function areConversationsEqual(a: any[], b: any[]): boolean {
@@ -155,6 +158,10 @@ export default function ChatsPage() {
     return [];
   });
   const [messageInput, setMessageInput] = useState("");
+  const [expressionsOpen, setExpressionsOpen] = useState(false);
+  const [sendingSticker, setSendingSticker] = useState(false);
+  const stickerLock = useRef(false);
+  const composerRef = useRef<HTMLInputElement>(null);
   const [loadingConv, setLoadingConv] = useState(() => {
     if (typeof window !== "undefined") {
       try {
@@ -805,6 +812,29 @@ export default function ChatsPage() {
       toast.error(err.message);
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
     }
+  };
+
+  const handleSendSticker = async (content: string) => {
+    if (!activeConvId || stickerLock.current) return;
+    const conversationId = activeConvId;
+    stickerLock.current = true;
+    setSendingSticker(true);
+    try {
+      const res = await fetch('/api/conversations/' + conversationId + '/messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'STICKER', content, replyToId: reply?.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Не удалось отправить стикер');
+      if (latestConversation.current === conversationId) {
+        setMessages(prev => prev.some(m => m.id === data.message.id) ? prev : [...prev, data.message]);
+        setReply(null);
+        scrollToBottom(true);
+      }
+      moveConversationToTop(conversationId, data.message, false);
+      setExpressionsOpen(false);
+    } catch (error: any) { toast.error(error.message); }
+    finally { stickerLock.current = false; setSendingSticker(false); }
   };
 
   // 5. Send Staged Attachments from Composer
@@ -1611,6 +1641,7 @@ export default function ChatsPage() {
                 ) : (
                   messages.map((msg, messageIndex) => {
                     const isMe = msg.senderId === user?.id;
+                    const sticker = msg.type === "STICKER" ? getSticker(msg.content) : undefined;
                     const grouped =
                       messageIndex > 0 &&
                       messages[messageIndex - 1].senderId === msg.senderId &&
@@ -1650,7 +1681,7 @@ export default function ChatsPage() {
                         )}
 
                         <div
-                          className={`message-bubble max-w-[88%] sm:max-w-[72%] rounded-2xl px-4 py-2.5 space-y-2 relative text-xs sm:text-sm leading-relaxed transition-all shadow-xs ${
+                          className={`message-bubble ${sticker ? "sticker-message" : ""} max-w-[88%] sm:max-w-[72%] rounded-2xl px-4 py-2.5 space-y-2 relative text-xs sm:text-sm leading-relaxed transition-all shadow-xs ${
                             isMe
                               ? "bg-gradient-to-br from-accent via-accent to-accent-hover text-white rounded-tr-xs shadow-md shadow-accent/15"
                               : "glass-panel bg-surface-elevated/90 border border-border text-foreground rounded-tl-xs backdrop-blur-md"
@@ -1770,7 +1801,8 @@ export default function ChatsPage() {
                               </p>
                             </div>
                           )}
-                          {msg.content &&
+                          {sticker && <img className="chat-sticker" src={`/stickers/${sticker.id}.svg`} alt={sticker.label} width={180} height={180} />}
+                          {msg.content && !sticker &&
                             !(
                               msg.type === "AUDIO_VOICE" &&
                               voiceDuration(msg.content) >= 0 &&
@@ -1994,7 +2026,9 @@ export default function ChatsPage() {
                       <Paperclip className="w-4 h-4" />
                     </button>
 
+                    <button type="button" className="icon-button shrink-0" aria-label="Эмодзи и стикеры" onClick={() => setExpressionsOpen(true)}><Smile size={20} /></button>
                     <input
+                      ref={composerRef}
                       type="text"
                       placeholder="Напишите сообщение..."
                       value={messageInput}
@@ -2049,6 +2083,13 @@ export default function ChatsPage() {
         </div>
       </div>
 
+      <ExpressionPicker open={expressionsOpen} onOpenChange={setExpressionsOpen} busy={sendingSticker} onSticker={handleSendSticker} onEmoji={emoji => {
+        const input = composerRef.current;
+        const start = input?.selectionStart ?? messageInput.length;
+        const end = input?.selectionEnd ?? start;
+        typeMessage(messageInput.slice(0, start) + emoji + messageInput.slice(end));
+        setTimeout(() => { input?.focus(); input?.setSelectionRange(start + emoji.length, start + emoji.length); }, 0);
+      }} />
       <Sheet
         open={attachmentSheet}
         onOpenChange={setAttachmentSheet}

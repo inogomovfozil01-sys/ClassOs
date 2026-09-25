@@ -334,3 +334,19 @@ html[data-platform="android"] .field input, html[data-platform="android"] .field
   .app-sidebar, .topbar, .mobile-nav, .toolbar-actions { display: none !important; }
   .app-shell, .workspace, .workspace-content { height: auto; overflow: visible; display: block; padding: 0; }
 }
+.expression-tabs { display: flex; gap: 8px; margin: 12px 0; }
+.expression-tabs button { flex: 1; min-height: 44px; border-radius: 10px; background: var(--surface); }
+.expression-tabs button[aria-selected="true"] { background: var(--accent); color: white; }
+.expression-content { max-height: min(55dvh, 440px); overflow-y: auto; overscroll-behavior: contain; }
+.expression-content h3 { font-size: 12px; font-weight: 600; margin: 16px 0 8px; }
+.emoji-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(42px,1fr)); gap: 3px; }
+.emoji-grid button { min-width: 0; min-height: 44px; font-size: 25px; border-radius: 10px; }
+.emoji-grid button:hover, .sticker-grid button:hover { background: var(--surface-hover); }
+.sticker-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(110px,1fr)); gap: 10px; }
+.sticker-grid button { min-width: 0; padding: 6px; border-radius: 12px; display: grid; justify-items: center; gap: 4px; }
+.sticker-grid img { width: 100%; max-width: 160px; height: auto; }
+.sticker-grid span { font-size: 12px; overflow-wrap: anywhere; }
+.sticker-grid button:disabled { opacity: .5; cursor: wait; }
+.message-bubble.sticker-message { background: transparent !important; border: 0 !important; box-shadow: none !important; color: var(--foreground) !important; padding: 4px 8px !important; backdrop-filter: none; }
+.sticker-message > div { color: var(--foreground-muted) !important; }
+.chat-sticker { width: 180px; max-width: 100%; height: auto; display: block; }

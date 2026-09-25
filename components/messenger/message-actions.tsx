@@ -133,7 +133,7 @@ export function MessageActions({
               <Copy size={16} />
               Копировать
             </button>
-            {isOwn && (
+            {isOwn && message.type !== "STICKER" && (
               <button
                 onClick={() => {
                   setAction("edit");

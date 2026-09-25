@@ -34,6 +34,9 @@ export async function PATCH(
         { status: 403 },
       );
     const { content } = await req.json();
+    if (context.message.type === "STICKER") {
+      return NextResponse.json({ error: "Стикеры нельзя редактировать" }, { status: 400 });
+    }
     if (
       typeof content !== "string" ||
       (!content.trim() && !context.message.attachments.length)
