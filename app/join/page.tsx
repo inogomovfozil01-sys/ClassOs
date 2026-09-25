@@ -22,7 +22,7 @@ import {
   isValidLatinName,
   containsCyrillic,
   transliterateToLatinName,
-} from "@/lib/username-ai";
+} from "@/lib/username-format";
 
 export default function JoinPage() {
   const router = useRouter();
