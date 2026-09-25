@@ -16,7 +16,12 @@ export async function PATCH(
   const {id: resourceId} = await params;
   try {
     const currentUser = await getCurrentUser();
-    if (!currentUser || !canManageUsers(currentUser.role)) {
+    if (!currentUser) {
+      return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+    }
+
+    const isSelf = currentUser.id === resourceId;
+    if (!canManageUsers(currentUser.role) && !isSelf) {
       return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
     }
 
@@ -39,12 +44,17 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { firstName, lastName, role, isBlocked } = body;
+    const { firstName, lastName, middleName, role, isBlocked } = body;
 
     const data: any = {};
-    if (firstName) data.firstName = firstName.trim();
-    if (lastName) data.lastName = lastName.trim();
+    if (typeof firstName === "string") data.firstName = firstName.trim();
+    if (typeof lastName === "string") data.lastName = lastName.trim();
+    if (typeof middleName === "string") data.middleName = middleName.trim() || null;
+
     if (typeof isBlocked === "boolean") {
+      if (!canManageUsers(currentUser.role)) {
+        return NextResponse.json({ error: "Недостаточно прав для блокировки" }, { status: 403 });
+      }
       if (targetUser.role === "OWNER") {
         return NextResponse.json(
           { error: "Владельца нельзя заблокировать" },
@@ -54,6 +64,9 @@ export async function PATCH(
       data.isBlocked = isBlocked;
     }
     if (role && role !== targetUser.role) {
+      if (!canManageUsers(currentUser.role)) {
+        return NextResponse.json({ error: "Недостаточно прав для смены роли" }, { status: 403 });
+      }
       if (targetUser.role === "OWNER") {
         return NextResponse.json(
           { error: "Роль Владельца нельзя изменить" },

@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "real class roster added",
+    "cell persisted after reload",
+    "failed save stays visibly unsaved",
+    "bulk update",
+    "schedule arbitrary lesson time and inline subject creation",
+    "command palette keyboard navigation",
+    "mobile row shows every column",
+    "student read-only UI and server permissions",
+    "setup closes after owner creation"
+  ]
+}

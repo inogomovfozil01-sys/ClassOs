@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "student own status only",
+    "summary forbidden to student",
+    "other-user edits forbidden",
+    "password fields rejected",
+    "five-day reminder and no duplicate on repeated scan",
+    "confirmation marks reminder read",
+    "responsive staff summary",
+    "legacy voice file renders as player"
+  ],
+  "errors": []
+}

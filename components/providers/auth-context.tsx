@@ -12,6 +12,7 @@ export interface UserProfile {
   role: "OWNER" | "ADMIN" | "LEADER" | "TEACHER" | "STUDENT";
   avatarUrl?: string | null;
   mustChangePassword?: boolean;
+  createdAt?: string | Date | null;
 }
 
 interface AuthContextType {
@@ -47,9 +48,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         const data = await res.json().catch(() => ({}));
         setUser(null);
+        const isPublicPath =
+          pathname === "/login" ||
+          pathname === "/setup" ||
+          Boolean(pathname?.startsWith("/join")) ||
+          Boolean(pathname?.startsWith("/invite"));
+
         if (data.needsSetup && pathname !== "/setup") {
           router.replace("/setup");
-        } else if (pathname !== "/login" && pathname !== "/setup") {
+        } else if (!isPublicPath) {
           router.replace("/login");
         }
       }

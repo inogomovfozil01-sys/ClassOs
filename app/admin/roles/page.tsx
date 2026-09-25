@@ -11,6 +11,7 @@ const permissions = [
   ["Публикация домашних заданий", rights.canPublishHomework],
   ["Новости и события", rights.canPublishNews],
   ["Таблицы класса", rights.canManageTables],
+  ["Файлы класса", rights.canAccessClassFiles],
   ["Дежурства", rights.canManageDuty],
   ["Создание аккаунтов и назначение ролей", rights.canManageUsers],
   ["Помощник лидера", rights.canAccessLeaderAI],

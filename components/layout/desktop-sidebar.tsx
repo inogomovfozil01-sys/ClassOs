@@ -27,6 +27,7 @@ import { useAuth } from "@/components/providers/auth-context";
 import {
   canManageUsers,
   isLeaderOrHigher,
+  canAccessClassFiles,
   getRoleDisplayName,
 } from "@/lib/auth/rbac";
 
@@ -86,16 +87,27 @@ export function DesktopSidebar() {
         )}
       </Link>
       <nav className="sidebar-navigation" aria-label="Разделы ClassOS">
-        {schoolLinks.map((item, i) => (
-          <div key={item.href}>
-            {!collapsed && (i === 1 || i === 4 || i === 10) && (
-              <div className="sidebar-group">
-                {i === 1 ? "Учёба" : i === 4 ? "Класс" : "Дополнительно"}
-              </div>
-            )}
-            {link(item)}
-          </div>
-        ))}
+        {schoolLinks
+          .filter(
+            (item) => item.href !== "/files" || canAccessClassFiles(user.role),
+          )
+          .map((item) => (
+            <div key={item.href}>
+              {!collapsed &&
+                (item.href === "/schedule" ||
+                  item.href === "/news" ||
+                  item.href === "/today") && (
+                  <div className="sidebar-group">
+                    {item.href === "/schedule"
+                      ? "Учёба"
+                      : item.href === "/news"
+                        ? "Класс"
+                        : "Дополнительно"}
+                  </div>
+                )}
+              {link(item)}
+            </div>
+          ))}
         {isLeaderOrHigher(user.role) &&
           link({
             href: "/class/manage",

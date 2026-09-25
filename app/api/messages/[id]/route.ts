@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
+import { isAdminOrOwner, isLeaderOrHigher } from "@/lib/auth/rbac";
+
 async function access(id: string) {
   const user = await getCurrentUser();
   if (!user) return null;
@@ -57,21 +59,90 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const {id: resourceId} = await params;
+  const { id: resourceId } = await params;
   try {
-    const context = await access(resourceId);
-    if (!context || context.message.senderId !== context.user.id)
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+    }
+
+    const url = new URL(req.url);
+    const mode = url.searchParams.get("mode") || "for_all";
+
+    const message = await prisma.message.findUnique({
+      where: { id: resourceId },
+      include: {
+        conversation: {
+          include: {
+            members: {
+              where: { userId: user.id },
+            },
+          },
+        },
+      },
+    });
+
+    if (!message) {
       return NextResponse.json(
-        { error: "Нельзя удалить это сообщение" },
+        { error: "Сообщение не найдено" },
+        { status: 404 },
+      );
+    }
+
+    const isMember = message.conversation.members.length > 0;
+    if (!isMember && !isAdminOrOwner(user.role)) {
+      return NextResponse.json(
+        { error: "Нет доступа к сообщению" },
         { status: 403 },
       );
-    const message = await prisma.message.update({
+    }
+
+    // 1. Delete only for current user ("Удалить только у меня")
+    if (mode === "for_me") {
+      const key = `deleted_msgs:${user.id}`;
+      const existing = await prisma.systemSetting.findUnique({ where: { key } });
+      let ids: string[] = [];
+      if (existing?.value) {
+        try {
+          ids = JSON.parse(existing.value);
+        } catch {}
+      }
+      if (!ids.includes(resourceId)) {
+        ids.push(resourceId);
+        if (ids.length > 500) ids = ids.slice(-500);
+        await prisma.systemSetting.upsert({
+          where: { key },
+          update: { value: JSON.stringify(ids) },
+          create: { key, value: JSON.stringify(ids) },
+        });
+      }
+      return NextResponse.json({ success: true, mode: "for_me", id: resourceId });
+    }
+
+    // 2. Delete for everyone ("Удалить у всех")
+    const memberRole = message.conversation.members[0]?.role;
+    const canDeleteForAll =
+      message.senderId === user.id ||
+      memberRole === "ADMIN" ||
+      isAdminOrOwner(user.role) ||
+      isLeaderOrHigher(user.role);
+
+    if (!canDeleteForAll) {
+      return NextResponse.json(
+        { error: "Нельзя удалить это сообщение у всех" },
+        { status: 403 },
+      );
+    }
+
+    const updated = await prisma.message.update({
       where: { id: resourceId },
       data: { isDeleted: true },
     });
-    emit(message.conversationId, message);
-    return NextResponse.json({ success: true });
-  } catch {
+
+    emit(message.conversationId, updated);
+    return NextResponse.json({ success: true, mode: "for_all", id: resourceId });
+  } catch (error: any) {
+    console.error("Delete message error:", error);
     return NextResponse.json(
       { error: "Не удалось удалить сообщение" },
       { status: 500 },

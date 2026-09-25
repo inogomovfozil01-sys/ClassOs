@@ -43,23 +43,40 @@ export async function POST(req: Request) {
       color,
       teacherId,
       defaultClassroomId,
+      roomNumber,
       description,
     } = body;
 
-    if (!name || !shortName) {
+    if (!name || typeof name !== "string" || !name.trim()) {
       return NextResponse.json(
-        { error: "Укажите полное и краткое название предмета" },
+        { error: "Укажите название предмета" },
         { status: 400 },
       );
     }
 
+    const trimmedName = name.trim();
+    const finalShortName = (shortName && typeof shortName === "string" && shortName.trim())
+      ? shortName.trim()
+      : trimmedName.slice(0, 8);
+
+    let finalClassroomId = defaultClassroomId;
+    if (!finalClassroomId && roomNumber && typeof roomNumber === "string" && roomNumber.trim()) {
+      const rNum = roomNumber.trim();
+      const allRooms = await prisma.classroom.findMany();
+      let r = allRooms.find((x: any) => x.number.trim().toLowerCase() === rNum.toLowerCase());
+      if (!r) {
+        r = await prisma.classroom.create({ data: { number: rNum } });
+      }
+      finalClassroomId = r.id;
+    }
+
     const subject = await prisma.subject.create({
       data: {
-        name: name.trim(),
-        shortName: shortName.trim(),
-        color: color || "#6366f1",
+        name: trimmedName,
+        shortName: finalShortName,
+        color: color || "#308574",
         teacherId: teacherId || null,
-        defaultClassroomId: defaultClassroomId || null,
+        defaultClassroomId: finalClassroomId || null,
         description: description?.trim() || null,
       },
       include: {

@@ -57,8 +57,11 @@ export async function POST(req: Request) {
       lessonId,
       action,
       subjectId,
+      subjectName,
       teacherId,
+      teacherName,
       classroomId,
+      roomNumber,
       startTime,
       endTime,
       note,
@@ -71,14 +74,70 @@ export async function POST(req: Request) {
       );
     }
 
+    let finalSubjectId = subjectId;
+    let finalTeacherId = teacherId;
+    let finalClassroomId = classroomId;
+
+    if (!finalSubjectId && subjectName && typeof subjectName === "string" && subjectName.trim()) {
+      const sName = subjectName.trim();
+      const allSubjects = await prisma.subject.findMany();
+      let s = allSubjects.find((x: any) => x.name.trim().toLowerCase() === sName.toLowerCase());
+      if (!s) {
+        s = await prisma.subject.create({
+          data: {
+            name: sName,
+            shortName: sName.slice(0, 8),
+            color: "#308574",
+          },
+        });
+      }
+      finalSubjectId = s.id;
+    }
+
+    if (!finalTeacherId && teacherName && typeof teacherName === "string" && teacherName.trim()) {
+      const tName = teacherName.trim();
+      const parts = tName.split(/\s+/);
+      const lastName = parts[0] || tName;
+      const firstName = parts.slice(1).join(" ") || "";
+      const allTeachers = await prisma.teacherProfile.findMany();
+      let t = allTeachers.find(
+        (x: any) =>
+          `${x.lastName} ${x.firstName}`.trim().toLowerCase() === tName.toLowerCase() ||
+          x.lastName.trim().toLowerCase() === lastName.toLowerCase()
+      );
+      if (!t) {
+        t = await prisma.teacherProfile.create({
+          data: {
+            lastName,
+            firstName: firstName || "Учитель",
+          },
+        });
+      }
+      finalTeacherId = t.id;
+    }
+
+    if (!finalClassroomId && roomNumber && typeof roomNumber === "string" && roomNumber.trim()) {
+      const rNum = roomNumber.trim();
+      const allRooms = await prisma.classroom.findMany();
+      let r = allRooms.find((x: any) => x.number.trim().toLowerCase() === rNum.toLowerCase());
+      if (!r) {
+        r = await prisma.classroom.create({
+          data: {
+            number: rNum,
+          },
+        });
+      }
+      finalClassroomId = r.id;
+    }
+
     const exception = await prisma.scheduleException.create({
       data: {
         date,
         lessonId: lessonId || null,
         action, // MODIFIED, CANCELLED, MOVED, EXTRA
-        subjectId: subjectId || null,
-        teacherId: teacherId || null,
-        classroomId: classroomId || null,
+        subjectId: finalSubjectId || null,
+        teacherId: finalTeacherId || null,
+        classroomId: finalClassroomId || null,
         startTime: startTime || null,
         endTime: endTime || null,
         note: note?.trim() || null,
@@ -103,7 +162,7 @@ export async function POST(req: Request) {
     await logAuditEvent({
       userId: user.id,
       action: "SCHEDULE_EXCEPTION_CREATED",
-      entity: "SCHEDULE_EXCEPTION",
+      entity: "SCHEDULE",
       entityId: exception.id,
       details: { date, action, note },
     });
@@ -112,7 +171,42 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Create schedule exception error:", error);
     return NextResponse.json(
-      { error: error.message || "Ошибка создания изменения" },
+      { error: error.message || "Ошибка добавления изменения" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const user = await getCurrentUser();
+    if (!user || !isLeaderOrHigher(user.role)) {
+      return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) {
+      return NextResponse.json(
+        { error: "ID изменения не указан" },
+        { status: 400 },
+      );
+    }
+
+    await prisma.scheduleException.delete({ where: { id } });
+
+    await logAuditEvent({
+      userId: user.id,
+      action: "SCHEDULE_EXCEPTION_DELETED",
+      entity: "SCHEDULE",
+      entityId: id,
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Delete schedule exception error:", error);
+    return NextResponse.json(
+      { error: "Ошибка удаления изменения" },
       { status: 500 },
     );
   }

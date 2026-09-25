@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Sheet } from "@/components/ui/workspace";
 import { request, json } from "@/components/tables/model";
 import { localDate } from "@/lib/diary";
+
 export function ScheduleExceptionDialog({
   isOpen,
   onClose,
@@ -20,9 +21,9 @@ export function ScheduleExceptionDialog({
   const [date, setDate] = useState(defaultDate || localDate(new Date()));
   const [action, setAction] = useState("MODIFIED");
   const [note, setNote] = useState("");
-  const [subject, setSubject] = useState("");
-  const [teacher, setTeacher] = useState("");
-  const [room, setRoom] = useState("");
+  const [subjectName, setSubjectName] = useState("");
+  const [teacherName, setTeacherName] = useState("");
+  const [roomNumber, setRoomNumber] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -30,29 +31,50 @@ export function ScheduleExceptionDialog({
   const [rooms, setRooms] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
   useEffect(() => {
     if (!isOpen) return;
     setDate(defaultDate || localDate(new Date()));
     setAction(lesson ? "MODIFIED" : "EXTRA");
     setNote("");
-    setSubject(lesson?.subjectId || "");
-    setTeacher(lesson?.teacherId || "");
-    setRoom(lesson?.classroomId || "");
     setStart(lesson?.startTime || "08:00");
     setEnd(lesson?.endTime || "08:45");
     setError("");
+
     Promise.all([
       request("/api/subjects"),
       request("/api/teachers"),
       request("/api/classrooms"),
     ])
       .then(([s, t, r]) => {
-        setSubjects(s.subjects);
-        setTeachers(t.teachers);
-        setRooms(r.classrooms);
+        const subList = s.subjects || [];
+        const teachList = t.teachers || [];
+        const roomList = r.classrooms || [];
+        setSubjects(subList);
+        setTeachers(teachList);
+        setRooms(roomList);
+
+        const initialSubject =
+          lesson?.subject?.name ||
+          subList.find((x: any) => x.id === lesson?.subjectId)?.name ||
+          "";
+        const initialTeacher = lesson?.teacher
+          ? `${lesson.teacher.lastName} ${lesson.teacher.firstName}`.trim()
+          : teachList.find((x: any) => x.id === lesson?.teacherId)
+            ? `${teachList.find((x: any) => x.id === lesson?.teacherId)?.lastName} ${teachList.find((x: any) => x.id === lesson?.teacherId)?.firstName}`.trim()
+            : "";
+        const initialRoom =
+          lesson?.classroom?.number ||
+          roomList.find((x: any) => x.id === lesson?.classroomId)?.number ||
+          "";
+
+        setSubjectName(initialSubject);
+        setTeacherName(initialTeacher);
+        setRoomNumber(initialRoom);
       })
       .catch((e) => setError(e.message));
   }, [isOpen, lesson, defaultDate]);
+
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (action !== "CANCELLED" && end <= start) {
@@ -67,9 +89,9 @@ export function ScheduleExceptionDialog({
           date,
           lessonId: lesson?.id || null,
           action,
-          subjectId: subject || null,
-          teacherId: teacher || null,
-          classroomId: room || null,
+          subjectName: action !== "CANCELLED" ? subjectName.trim() : null,
+          teacherName: action !== "CANCELLED" ? teacherName.trim() || null : null,
+          roomNumber: action !== "CANCELLED" ? roomNumber.trim() || null : null,
           startTime: start,
           endTime: end,
           note,
@@ -84,6 +106,7 @@ export function ScheduleExceptionDialog({
       setBusy(false);
     }
   }
+
   return (
     <Sheet
       open={isOpen}
@@ -118,18 +141,20 @@ export function ScheduleExceptionDialog({
           <>
             <label className="field">
               Предмет
-              <select
+              <input
+                type="text"
                 required
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-              >
-                <option value="">Выберите предмет</option>
+                placeholder="Впишите название предмета"
+                list="exception-subjects-datalist"
+                autoComplete="off"
+                value={subjectName}
+                onChange={(e) => setSubjectName(e.target.value)}
+              />
+              <datalist id="exception-subjects-datalist">
                 {subjects.map((s) => (
-                  <option value={s.id} key={s.id}>
-                    {s.name}
-                  </option>
+                  <option key={s.id} value={s.name} />
                 ))}
-              </select>
+              </datalist>
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="field">
@@ -153,28 +178,38 @@ export function ScheduleExceptionDialog({
             </div>
             <label className="field">
               Учитель
-              <select
-                value={teacher}
-                onChange={(e) => setTeacher(e.target.value)}
-              >
-                <option value="">Без изменения</option>
+              <input
+                type="text"
+                placeholder="Впишите имя учителя"
+                list="exception-teachers-datalist"
+                autoComplete="off"
+                value={teacherName}
+                onChange={(e) => setTeacherName(e.target.value)}
+              />
+              <datalist id="exception-teachers-datalist">
                 {teachers.map((t) => (
-                  <option value={t.id} key={t.id}>
-                    {t.lastName} {t.firstName}
-                  </option>
+                  <option
+                    key={t.id}
+                    value={`${t.lastName} ${t.firstName}`.trim()}
+                  />
                 ))}
-              </select>
+              </datalist>
             </label>
             <label className="field">
               Кабинет
-              <select value={room} onChange={(e) => setRoom(e.target.value)}>
-                <option value="">Без изменения</option>
+              <input
+                type="text"
+                placeholder="Впишите номер кабинета"
+                list="exception-rooms-datalist"
+                autoComplete="off"
+                value={roomNumber}
+                onChange={(e) => setRoomNumber(e.target.value)}
+              />
+              <datalist id="exception-rooms-datalist">
                 {rooms.map((r) => (
-                  <option value={r.id} key={r.id}>
-                    {r.number}
-                  </option>
+                  <option key={r.id} value={r.number} />
                 ))}
-              </select>
+              </datalist>
             </label>
           </>
         )}

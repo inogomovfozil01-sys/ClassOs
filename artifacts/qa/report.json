@@ -1,0 +1,290 @@
+{
+  "results": [
+    {
+      "width": 1440,
+      "route": "/",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/today",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/schedule",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/homework",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/news",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/subjects",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/chats",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/files",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/events",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/tables",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/profile",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/notifications",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/admin",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/admin/users",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/admin/settings",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/admin/audit",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/admin/backup",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/ai",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/tests",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "/duty",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/today",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/schedule",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/homework",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/news",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/subjects",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/chats",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/files",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/events",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/tables",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/profile",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/notifications",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/admin",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/admin/users",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/admin/settings",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/admin/audit",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/admin/backup",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/ai",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/tests",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "/duty",
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "route": "table-detail",
+      "overflow": false
+    },
+    {
+      "width": 360,
+      "route": "table-detail",
+      "overflow": false
+    },
+    {
+      "width": 375,
+      "route": "table-detail",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "route": "table-detail",
+      "overflow": false
+    },
+    {
+      "width": 430,
+      "route": "table-detail",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "route": "table-detail",
+      "overflow": false
+    },
+    {
+      "width": 1280,
+      "route": "table-detail",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "route": "table-detail",
+      "overflow": false
+    },
+    {
+      "width": 1920,
+      "route": "table-detail",
+      "overflow": false
+    }
+  ],
+  "errors": []
+}

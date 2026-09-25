@@ -11,6 +11,7 @@ import {
   canAccessJarvis,
   canAccessLeaderAI,
   canAccessStudentAI,
+  canAccessClassFiles,
 } from '../lib/auth/rbac';
 
 describe('RBAC Permission Matrix', () => {
@@ -60,5 +61,14 @@ describe('RBAC Permission Matrix', () => {
     expect(canAccessStudentAI('LEADER')).toBe(true);
     expect(canAccessStudentAI('TEACHER')).toBe(true);
     expect(canAccessStudentAI(null)).toBe(false);
+  });
+
+  it('restricts TEACHER from accessing class files', () => {
+    expect(canAccessClassFiles('TEACHER')).toBe(false);
+    expect(canAccessClassFiles('STUDENT')).toBe(true);
+    expect(canAccessClassFiles('LEADER')).toBe(true);
+    expect(canAccessClassFiles('ADMIN')).toBe(true);
+    expect(canAccessClassFiles('OWNER')).toBe(true);
+    expect(canAccessClassFiles(null)).toBe(false);
   });
 });

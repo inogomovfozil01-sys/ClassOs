@@ -1,0 +1,2 @@
+const {chromium}=require('C:/Users/Lenovo/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+(async()=>{const b=await chromium.launch({channel:'msedge',headless:true});const c=await b.newContext();const r=await c.request.post('http://localhost:3001/api/auth/login',{data:{username:'qa_owner',password:'ClassOS-QA-2026!'},timeout:180000});console.log(r.status());if(!r.ok())throw Error(await r.text());await c.storageState({path:'artifacts/qa/auth.json'});await b.close()})();

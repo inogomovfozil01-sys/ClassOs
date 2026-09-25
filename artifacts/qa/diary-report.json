@@ -1,0 +1,17 @@
+{
+  "checks": [
+    "same homework link from /",
+    "same homework link from /schedule",
+    "same homework link from /homework",
+    "same homework link from /subjects/cmud0ixcf0010h0a0lreoj1bf",
+    "personal status persists",
+    "cancellation reflected in /",
+    "cancellation reflected in /schedule",
+    "mobile /members",
+    "mobile /class/manage",
+    "mobile /subjects/cmud0ixcf0010h0a0lreoj1bf",
+    "mobile /homework/cmudlahz2001bkmlpyhuvn3pl",
+    "message edit and search",
+    "forward, read, delete"
+  ]
+}

@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { FileCard } from "@/components/media/file-card";
 import { Sheet } from "@/components/ui/workspace";
 import { uploadFile } from "@/lib/upload";
+import { canAccessClassFiles } from "@/lib/auth/rbac";
 
 function FilesContent() {
   const { user } = useAuth();
@@ -125,6 +126,20 @@ function FilesContent() {
       return <FileSpreadsheet className="w-5 h-5 text-success" />;
     return <FileText className="w-5 h-5 text-accent" />;
   };
+
+  if (user && !canAccessClassFiles(user.role)) {
+    return (
+      <AppShell title="Файлы и материалы">
+        <div className="glass-panel rounded-3xl p-10 text-center space-y-3 border border-border">
+          <FolderOpen className="w-10 h-10 text-accent mx-auto" />
+          <h3 className="font-bold text-sm text-foreground">Доступ ограничен</h3>
+          <p className="text-xs text-foreground-muted max-w-sm mx-auto">
+            Учителям закрыт доступ к файлам класса и голосовым записям.
+          </p>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell title="Файлы и материалы">
@@ -305,7 +320,7 @@ function FilesContent() {
                   <input
                     type="text"
                     required
-                    placeholder="напр.: Геометрия 10 класс"
+                    placeholder="напр.: Геометрия 7 класс"
                     value={newFolderName}
                     onChange={(e) => setNewFolderName(e.target.value)}
                     className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-accent"

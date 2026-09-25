@@ -38,6 +38,55 @@ export async function GET() {
       },
     });
 
+    // Collect all otherUser IDs and lastReadMessage IDs across conversations
+    const otherUserIds = new Set<string>();
+    for (const m of memberships) {
+      for (const cm of m.conversation.members) {
+        if (cm.userId !== user.id) otherUserIds.add(cm.userId);
+      }
+    }
+
+    const lastReadIds = Array.from(
+      new Set(
+        memberships
+          .flatMap((m) => m.conversation.members.map((cm) => cm.lastReadMessageId))
+          .filter(Boolean) as string[],
+      ),
+    );
+
+    // Fetch timestamps of read markers
+    const readMessages =
+      lastReadIds.length > 0
+        ? await prisma.message.findMany({
+            where: { id: { in: lastReadIds } },
+            select: { id: true, createdAt: true },
+          })
+        : [];
+
+    const readTimestampMap = new Map<string, number>();
+    for (const rm of readMessages) {
+      readTimestampMap.set(rm.id, rm.createdAt.getTime());
+    }
+
+    // Fetch presence info from SystemSetting
+    const presenceSettings =
+      otherUserIds.size > 0
+        ? await prisma.systemSetting.findMany({
+            where: {
+              key: {
+                in: Array.from(otherUserIds).map((id) => `presence:${id}`),
+              },
+            },
+          })
+        : [];
+
+    const presenceMap = new Map<string, number>();
+    for (const ps of presenceSettings) {
+      const uId = ps.key.replace("presence:", "");
+      const ts = Number(ps.value);
+      if (!isNaN(ts)) presenceMap.set(uId, ts);
+    }
+
     const conversations = await Promise.all(
       memberships.map(async (m) => {
         const conv = m.conversation;
@@ -57,16 +106,44 @@ export async function GET() {
           },
         });
 
+        // Determine read status of the last message
+        let isLastMessageRead = false;
+        if (lastMessage) {
+          const msgTime = new Date(lastMessage.createdAt).getTime();
+          if (lastMessage.senderId === user.id) {
+            // Did any recipient read it?
+            isLastMessageRead = conv.members.some((cm) => {
+              if (cm.userId === user.id || !cm.lastReadMessageId) return false;
+              const readTime = readTimestampMap.get(cm.lastReadMessageId);
+              return readTime ? readTime >= msgTime : false;
+            });
+          } else {
+            // Did current user read it?
+            if (m.lastReadMessageId) {
+              const myReadTime = readTimestampMap.get(m.lastReadMessageId);
+              isLastMessageRead = myReadTime ? myReadTime >= msgTime : false;
+            } else {
+              isLastMessageRead = false;
+            }
+          }
+        }
+
         // Determine chat title & avatar for DIRECT chats
         let displayName = conv.name;
         let displayAvatar = conv.avatarUrl;
-        let otherUser = null;
+        let otherUser: any = null;
 
         if (conv.type === "DIRECT") {
-          otherUser = conv.members.find(
+          const otherMember = conv.members.find(
             (member) => member.userId !== user.id,
-          )?.user;
-          if (otherUser) {
+          );
+          if (otherMember?.user) {
+            const lastSeenTs = presenceMap.get(otherMember.userId);
+            otherUser = {
+              ...otherMember.user,
+              lastSeenAt: lastSeenTs ? new Date(lastSeenTs).toISOString() : null,
+              isOnline: lastSeenTs ? Date.now() - lastSeenTs < 90 * 1000 : false,
+            };
             displayName = `${otherUser.lastName} ${otherUser.firstName}`;
             displayAvatar = otherUser.avatarUrl;
           }
@@ -87,11 +164,19 @@ export async function GET() {
                 type: lastMessage.type,
                 createdAt: lastMessage.createdAt,
                 senderId: lastMessage.senderId,
+                isRead: isLastMessageRead,
               }
             : null,
         };
       }),
     );
+
+    // Strictly sort conversations by latest message timestamp descending
+    conversations.sort((a, b) => {
+      const timeA = a.lastMessage ? new Date(a.lastMessage.createdAt).getTime() : 0;
+      const timeB = b.lastMessage ? new Date(b.lastMessage.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
 
     return NextResponse.json({ conversations });
   } catch (error: any) {

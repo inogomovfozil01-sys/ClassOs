@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
+import { canAccessClassFiles } from "@/lib/auth/rbac";
+import { isVoiceAttachment } from "@/lib/media";
 import prisma from "@/lib/prisma";
 import { readStoredFile } from "@/lib/storage";
 
@@ -7,7 +9,7 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const {id: resourceId} = await params;
+  const { id: resourceId } = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -22,8 +24,18 @@ export async function GET(
       return new NextResponse("File not found", { status: 404 });
     }
 
+    if (!canAccessClassFiles(user.role)) {
+      if (
+        isVoiceAttachment({ mimeType: file.mimeType, fileName: file.name }) ||
+        file.uploaderId !== user.id
+      ) {
+        return new NextResponse("Forbidden", { status: 403 });
+      }
+    }
+
     const fileBuffer = await readStoredFile(file.storagePath);
-    if(!fileBuffer) return new NextResponse("File storage missing",{status:404});
+    if (!fileBuffer)
+      return new NextResponse("File storage missing", { status: 404 });
     return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         "Content-Type": file.mimeType || "application/octet-stream",

@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "new tables include all requested roles and exclude teachers",
+    "repeat sync has no duplicates and preserves cells",
+    "new admin automatically joins existing tables",
+    "role promotion updates existing tables",
+    "calendar deep link and RSVP",
+    "homework editing through UI",
+    "calendar, subjects, today, roles, tables at desktop and mobile widths"
+  ],
+  "errors": []
+}

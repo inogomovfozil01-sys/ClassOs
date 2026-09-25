@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
+import { canAccessClassFiles } from "@/lib/auth/rbac";
 import prisma from "@/lib/prisma";
 
 export async function GET(req: Request) {
@@ -7,6 +8,13 @@ export async function GET(req: Request) {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+    }
+
+    if (!canAccessClassFiles(user.role)) {
+      return NextResponse.json(
+        { error: "Доступ к файлам класса запрещён для вашей роли" },
+        { status: 403 },
+      );
     }
 
     const { searchParams } = new URL(req.url);

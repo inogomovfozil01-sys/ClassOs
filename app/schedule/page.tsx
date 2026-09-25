@@ -29,7 +29,7 @@ import {
   lessonsOnDate,
   localDate,
 } from "@/lib/diary";
-import { request } from "@/components/tables/model";
+import { request, json } from "@/components/tables/model";
 const days = [
   "Понедельник",
   "Вторник",
@@ -157,13 +157,29 @@ export default function SchedulePage() {
         description="Уроки, домашние задания и изменения на выбранную неделю."
         actions={
           canEdit && (
-            <div className="segmented">
-              <button aria-pressed={!editing} onClick={() => setEditing(false)}>
-                Просмотр
+            <div className="flex items-center gap-2">
+              <button
+                className="button text-xs"
+                onClick={async () => {
+                  try {
+                    await request("/api/schedule", json("POST", { action: "seed_default" }));
+                    await refresh();
+                    toast.success("Расписание из eMaktab успешно загружено");
+                  } catch (e: any) {
+                    toast.error(e?.message || "Не удалось загрузить расписание");
+                  }
+                }}
+              >
+                Заполнить из eMaktab
               </button>
-              <button aria-pressed={editing} onClick={() => setEditing(true)}>
-                Редактирование
-              </button>
+              <div className="segmented">
+                <button aria-pressed={!editing} onClick={() => setEditing(false)}>
+                  Просмотр
+                </button>
+                <button aria-pressed={editing} onClick={() => setEditing(true)}>
+                  Редактирование
+                </button>
+              </div>
             </div>
           )
         }

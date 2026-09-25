@@ -1,4 +1,4 @@
-import { getGeminiClient, GEMINI_MODEL } from './gemini-client';
+import { getGeminiClient, GEMINI_MODEL, generateContentWithFallback } from './gemini-client';
 import prisma from '@/lib/prisma';
 
 export async function generateLeaderDraft(input: string) {
@@ -41,7 +41,7 @@ ${JSON.stringify(subjects, null, 2)}
   "dueDate": "<дата в формате YYYY-MM-DD на которую задано, по умолчанию завтра>"
 }`;
 
-    const response = await client.models.generateContent({
+    const response = await generateContentWithFallback(client, {
       model: GEMINI_MODEL,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });

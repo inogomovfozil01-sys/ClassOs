@@ -17,7 +17,11 @@ import {
 import { Sheet } from "@/components/ui/workspace";
 import { schoolLinks } from "./desktop-sidebar";
 import { useAuth } from "@/components/providers/auth-context";
-import { canManageUsers, isLeaderOrHigher } from "@/lib/auth/rbac";
+import {
+  canManageUsers,
+  isLeaderOrHigher,
+  canAccessClassFiles,
+} from "@/lib/auth/rbac";
 import { QuickActionSheet } from "./quick-action-sheet";
 export function MobileBottomNav() {
   const path = usePathname();
@@ -57,7 +61,10 @@ export function MobileBottomNav() {
           {schoolLinks
             .filter(
               (item) =>
-                !["/", "/schedule", "/homework", "/chats"].includes(item.href),
+                !["/", "/schedule", "/homework", "/chats"].includes(
+                  item.href,
+                ) &&
+                (item.href !== "/files" || canAccessClassFiles(user?.role)),
             )
             .map((item) => (
               <Link

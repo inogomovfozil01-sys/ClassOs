@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
-import { canManageUsers } from "@/lib/auth/rbac";
+import { canManageUsers, canAccessClassFiles } from "@/lib/auth/rbac";
 
 export async function GET(req: Request) {
   try {
@@ -60,12 +60,14 @@ export async function GET(req: Request) {
         take: 5,
       }),
       // Files
-      prisma.fileAsset.findMany({
-        where: {
-          name: { contains: query },
-        },
-        take: 5,
-      }),
+      canAccessClassFiles(user.role)
+        ? prisma.fileAsset.findMany({
+            where: {
+              name: { contains: query },
+            },
+            take: 5,
+          })
+        : Promise.resolve([]),
       // Users (only if authorized to view or simple directory)
       prisma.user.findMany({
         where: {

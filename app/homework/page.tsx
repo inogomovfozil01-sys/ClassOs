@@ -383,37 +383,37 @@ function HomeworkContent() {
                   </div>
 
                   {/* Personal Status Switcher */}
-                  <div className="pt-3 border-t border-border flex flex-wrap gap-2 items-center justify-between">
-                    <span className="text-[11px] text-foreground-muted">
+                  <div className="pt-3 border-t border-border/60 flex flex-wrap gap-2 items-center justify-between">
+                    <span className="text-xs text-foreground-muted font-medium">
                       Личная отметка:
                     </span>
-                    <div className="flex items-center gap-1 text-[11px]">
+                    <div className="flex items-center gap-1 p-1 rounded-2xl bg-surface-secondary border border-border text-xs">
                       <button
                         onClick={() => handleStatusChange(hw.id, "NOT_STARTED")}
-                        className={`px-2.5 py-1 rounded-lg border transition-all ${
-                          hw.personalStatus === "NOT_STARTED"
-                            ? "bg-surface-elevated border-foreground-muted text-foreground font-semibold"
-                            : "border-transparent text-foreground-muted hover:text-foreground"
+                        className={`px-3 py-1 rounded-xl transition-all ${
+                          hw.personalStatus === "NOT_STARTED" || !hw.personalStatus
+                            ? "bg-surface-elevated text-foreground font-semibold shadow-xs"
+                            : "text-foreground-muted hover:text-foreground"
                         }`}
                       >
                         Не начато
                       </button>
                       <button
                         onClick={() => handleStatusChange(hw.id, "IN_PROGRESS")}
-                        className={`px-2.5 py-1 rounded-lg border transition-all ${
+                        className={`px-3 py-1 rounded-xl transition-all ${
                           hw.personalStatus === "IN_PROGRESS"
-                            ? "bg-warning/20 border-warning/40 text-warning font-semibold"
-                            : "border-transparent text-foreground-muted hover:text-foreground"
+                            ? "bg-warning/25 text-warning font-semibold shadow-xs"
+                            : "text-foreground-muted hover:text-foreground"
                         }`}
                       >
                         В процессе
                       </button>
                       <button
                         onClick={() => handleStatusChange(hw.id, "DONE")}
-                        className={`px-2.5 py-1 rounded-lg border transition-all ${
+                        className={`px-3 py-1 rounded-xl transition-all ${
                           hw.personalStatus === "DONE"
-                            ? "bg-success/20 border-success/40 text-success font-semibold"
-                            : "border-transparent text-foreground-muted hover:text-foreground"
+                            ? "bg-success/25 text-success font-semibold shadow-xs"
+                            : "text-foreground-muted hover:text-foreground"
                         }`}
                       >
                         ✓ Готово

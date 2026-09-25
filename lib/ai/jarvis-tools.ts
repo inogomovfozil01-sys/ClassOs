@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { getGeminiClient, GEMINI_MODEL } from './gemini-client';
+import { getGeminiClient, GEMINI_MODEL, generateContentWithFallback } from './gemini-client';
 
 export type ActionRisk = 'READ' | 'WRITE' | 'HIGH_RISK';
 
@@ -282,7 +282,7 @@ export async function processJarvisMessage(query: string, adminUserId: string) {
   } (или null, если подтверждения не требуется)
 }`;
 
-    const response = await client.models.generateContent({
+    const response = await generateContentWithFallback(client, {
       model: GEMINI_MODEL,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });

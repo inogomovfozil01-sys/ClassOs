@@ -63,3 +63,55 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
+
+// Push notification received
+self.addEventListener('push', (event) => {
+  let data = {
+    title: 'ClassOS',
+    body: 'Новое сообщение в чате',
+    url: '/chats',
+  };
+
+  try {
+    if (event.data) {
+      data = event.data.json();
+    }
+  } catch (e) {
+    if (event.data) {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: '/icons/icon-192.svg',
+    badge: '/icons/icon-192.svg',
+    vibrate: [200, 100, 200],
+    data: {
+      url: data.url || '/chats',
+    },
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+// User clicked a notification on phone or desktop
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/chats';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url.includes('/chats') && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});

@@ -1,4 +1,4 @@
-import { getGeminiClient, GEMINI_MODEL } from './gemini-client';
+import { getGeminiClient, GEMINI_MODEL, generateContentWithFallback } from './gemini-client';
 import prisma from '@/lib/prisma';
 
 export async function askStudentAI(prompt: string, studentId: string) {
@@ -85,7 +85,7 @@ export async function askStudentAI(prompt: string, studentId: string) {
 ${JSON.stringify(contextData, null, 2)}
 Если ученик спрашивает про расписание или ДЗ, опирайся строго на эти данные. Если данных в расписании или ДЗ нет, честно скажи, что лидер класса пока их не внёс.`;
 
-    const response = await client.models.generateContent({
+    const response = await generateContentWithFallback(client, {
       model: GEMINI_MODEL,
       contents: [
         {

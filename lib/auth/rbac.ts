@@ -57,6 +57,11 @@ export function canManageTables(role?: string | null): boolean {
   return isTeacherOrHigher(role);
 }
 
+export function canAccessClassFiles(role?: string | null): boolean {
+  if (!role) return false;
+  return role !== "TEACHER";
+}
+
 export function canAccessJarvis(role?: string | null): boolean {
   return isAdminOrOwner(role);
 }

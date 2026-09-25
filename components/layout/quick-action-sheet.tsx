@@ -17,6 +17,7 @@ import {
   canEditSchedule,
   canPublishHomework,
   canPublishNews,
+  canAccessClassFiles,
 } from "@/lib/auth/rbac";
 
 interface QuickActionSheetProps {
@@ -70,13 +71,15 @@ export function QuickActionSheet({ isOpen, onClose }: QuickActionSheetProps) {
     href: "/events?action=create",
   });
 
-  actions.push({
-    label: "Загрузить файл",
-    desc: "Учебные материалы, документы, презентации",
-    icon: FilePlus,
-    color: "text-accent bg-accent/15",
-    href: "/files?action=upload",
-  });
+  if (canAccessClassFiles(user.role)) {
+    actions.push({
+      label: "Загрузить файл",
+      desc: "Учебные материалы, документы, презентации",
+      icon: FilePlus,
+      color: "text-accent bg-accent/15",
+      href: "/files?action=upload",
+    });
+  }
 
   actions.push({
     label: "Создать таблицу",

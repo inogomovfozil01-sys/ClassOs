@@ -30,6 +30,18 @@ export async function GET(
       );
     }
 
+    // Check deleted-for-me messages
+    const deletedSetting = await prisma.systemSetting.findUnique({
+      where: { key: `deleted_msgs:${user.id}` },
+    });
+    const userDeletedSet = new Set<string>();
+    if (deletedSetting?.value) {
+      try {
+        const arr = JSON.parse(deletedSetting.value);
+        if (Array.isArray(arr)) arr.forEach((id: string) => userDeletedSet.add(id));
+      } catch {}
+    }
+
     const cursor = new URL(req.url).searchParams.get("before");
     const query = new URL(req.url).searchParams.get("q")?.trim();
     const messages = await prisma.message.findMany({
@@ -51,7 +63,14 @@ export async function GET(
         attachments: true,
         reactions: {
           include: {
-            user: { select: { id: true, firstName: true, lastName: true } },
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatarUrl: true,
+              },
+            },
           },
         },
       },
@@ -60,33 +79,67 @@ export async function GET(
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
 
-    const page = messages.slice(0, 100).reverse();
-    const readers = await prisma.conversationMember.findMany({
-      where: { conversationId: resourceId, userId: { not: user.id } },
-      select: { lastReadMessageId: true },
-    });
-    const readMessages = await prisma.message.findMany({
-      where: {
-        conversationId: resourceId,
-        id: {
-          in: readers.flatMap((r) =>
-            r.lastReadMessageId ? [r.lastReadMessageId] : [],
-          ),
+    const activeMessages = messages.filter((m) => !userDeletedSet.has(m.id));
+    const page = activeMessages.slice(0, 100).reverse();
+
+    // Map readers per message
+    const members = await prisma.conversationMember.findMany({
+      where: { conversationId: resourceId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+          },
         },
       },
-      select: { createdAt: true },
     });
-    const readUntil = Math.max(
-      0,
-      ...readMessages.map((m) => m.createdAt.getTime()),
-    );
-    return NextResponse.json({
-      messages: page.map((m) => ({
+
+    const lastReadIds = members
+      .map((m) => m.lastReadMessageId)
+      .filter(Boolean) as string[];
+
+    const readMessages = lastReadIds.length > 0
+      ? await prisma.message.findMany({
+          where: { id: { in: lastReadIds } },
+          select: { id: true, createdAt: true },
+        })
+      : [];
+
+    const lastReadMap = new Map<string, number>();
+    for (const rm of readMessages) {
+      lastReadMap.set(rm.id, rm.createdAt.getTime());
+    }
+
+    const memberReadUntil = new Map<string, number>();
+    for (const m of members) {
+      if (m.lastReadMessageId && lastReadMap.has(m.lastReadMessageId)) {
+        memberReadUntil.set(m.userId, lastReadMap.get(m.lastReadMessageId)!);
+      }
+    }
+
+    const formattedMessages = page.map((m) => {
+      const msgTime = m.createdAt.getTime();
+      const readByUsers = members
+        .filter(
+          (mbr) =>
+            mbr.userId !== m.senderId &&
+            (memberReadUntil.get(mbr.userId) || 0) >= msgTime,
+        )
+        .map((mbr) => mbr.user);
+
+      return {
         ...m,
-        readByOther:
-          m.senderId === user.id && m.createdAt.getTime() <= readUntil,
-      })),
-      hasMore: messages.length > 100,
+        readByUsers,
+        readByOther: readByUsers.length > 0,
+      };
+    });
+
+    return NextResponse.json({
+      messages: formattedMessages,
+      hasMore: activeMessages.length > 100,
       nextCursor: page[0]?.id || null,
     });
   } catch (error: any) {
