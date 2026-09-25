@@ -7,6 +7,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/ui/workspace";
 import { useAuth } from "@/components/providers/auth-context";
 import { AvatarEditor } from "@/components/profile/avatar-editor";
+import { AboutEditor } from "@/components/profile/about-editor";
 import { ThemeCardSelector } from "@/components/profile/theme-card-selector";
 import { StoriesSection } from "@/components/profile/stories-section";
 import { InstallPWAButton } from "@/components/pwa/install-banner";
@@ -280,10 +281,7 @@ export default function ProfilePage() {
             ======================================================== */}
         <div className="relative rounded-3xl overflow-hidden glass-panel border border-border shadow-xl">
           {/* Aesthetic Backdrop Gradient Banner */}
-          <div className="h-32 sm:h-36 w-full bg-gradient-to-r from-accent/25 via-purple-600/20 to-sky-500/20 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
-            <div className="absolute -top-12 -right-12 w-48 h-48 bg-accent/20 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 -left-12 w-48 h-48 bg-purple-500/20 rounded-full blur-2xl pointer-events-none" />
+          <div className="h-32 sm:h-36 w-full bg-surface-secondary relative overflow-hidden border-b border-border">
 
             <div className="absolute top-4 right-4 flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface/80 backdrop-blur-md border border-border text-[11px] font-semibold text-foreground-muted">
@@ -347,7 +345,16 @@ export default function ProfilePage() {
             </div>
 
             {/* Quick Action Buttons */}
-            <div className="flex items-center gap-2 self-stretch sm:self-auto justify-center">
+            <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-auto justify-center">
+              {user?.id && (
+                <Link
+                  href={`/members/${user.id}`}
+                  className="px-3.5 py-2 rounded-2xl bg-surface-elevated hover:bg-surface-hover border border-border text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm text-foreground"
+                >
+                  <ExternalLink size={14} className="text-accent" />
+                  <span>Мой профиль</span>
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={copyInviteLink}
@@ -453,6 +460,7 @@ export default function ProfilePage() {
               </div>
 
               <AvatarEditor />
+              {user && <AboutEditor userId={user.id} />}
             </div>
 
             {/* Profile Fields Form */}

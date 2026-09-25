@@ -2340,3 +2340,59 @@ p {
   animation: floatUp 1.2s ease-out forwards;
 }
 
+/* Quiet, consistent surfaces keep the school workspace focused on content. */
+.workspace, .app-sidebar, .glass-panel, .topbar {
+  background: var(--surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+.workspace, .app-sidebar { border-radius: 12px; }
+.glass-panel, .news-post, .homework-row, .week-day { border-radius: 12px; box-shadow: none; }
+.button, .icon-button, .field input, .field textarea, .field select, .control { border-radius: 8px; }
+.button, .button.primary, .button:hover, .icon-button:hover,
+.news-post:hover, .homework-row:hover, .diary-lesson:hover { box-shadow: none; transform: none; }
+.workspace-content > div { min-width: 0; }
+.member-profile { max-width: 860px; margin: 0 auto; }
+.profile-back { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--foreground-muted); margin-bottom: 24px; }
+.profile-back:hover { color: var(--foreground); }
+.profile-identity { display: flex; align-items: center; gap: 28px; padding: 28px 0 32px; border-bottom: 1px solid var(--border); }
+.profile-identity h1 { font-size: clamp(24px, 3vw, 32px); font-weight: 600; line-height: 1.25; margin: 6px 0; }
+.profile-avatar-button { flex-shrink: 0; border-radius: 50%; }
+.profile-avatar-button:disabled { opacity: 1; }
+.profile-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: .06em; color: var(--foreground-muted); }
+.profile-username { font-size: 14px; color: var(--foreground-muted); overflow-wrap: anywhere; }
+.profile-section { padding: 28px 0; border-bottom: 1px solid var(--border); }
+.profile-section h2 { font-size: 15px; font-weight: 600; }
+.profile-section .section-heading p { font-size: 12px; color: var(--foreground-muted); margin-top: 5px; }
+.profile-details { margin-top: 20px; display: grid; gap: 22px; }
+.profile-details dt { color: var(--foreground-muted); font-size: 12px; margin-bottom: 6px; }
+.profile-details dd { font-size: 14px; line-height: 1.65; overflow-wrap: anywhere; }
+.album-workspace { max-width: 1240px; margin: 0 auto; }
+.album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 24px; }
+.album-card { min-width: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.album-card:hover { border-color: var(--border-strong); }
+.album-cover { aspect-ratio: 4 / 3; background: var(--surface-secondary); display: flex; align-items: center; justify-content: center; color: var(--foreground-muted); overflow: hidden; }
+.album-cover img { width: 100%; height: 100%; object-fit: cover; }
+.album-card-body { padding: 18px; }
+.album-card-body h2 { font-size: 17px; font-weight: 600; margin: 8px 0; }
+.album-card-body > p:last-child { font-size: 12px; color: var(--foreground-muted); }
+.album-meta { display: flex; flex-wrap: wrap; gap: 12px 24px; color: var(--foreground-muted); font-size: 12px; padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+.album-meta > span { display: inline-flex; align-items: center; gap: 6px; }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 18px; }
+.album-photo { min-width: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.photo-open { display: block; width: 100%; aspect-ratio: 4 / 3; background: var(--surface-secondary); }
+.photo-open img { width: 100%; height: 100%; object-fit: cover; }
+.album-photo figcaption { display: flex; align-items: center; gap: 12px; padding: 10px 12px; min-height: 58px; }
+.album-photo figcaption > span { min-width: 0; flex: 1; font-size: 12px; overflow-wrap: anywhere; }
+.album-photo figcaption .icon-button { width: 32px; height: 32px; min-height: 32px; }
+@media (max-width: 599px) {
+  .profile-identity { align-items: flex-start; flex-direction: column; gap: 20px; padding-top: 4px; }
+  .profile-section { padding: 24px 0; }
+  .album-grid, .photo-grid { gap: 16px; }
+}
+@media (max-width: 767px) { .workspace { border-radius: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+}
+

@@ -10,6 +10,43 @@ import { canManageUsers } from "@/lib/auth/rbac";
 import { logAuditEvent } from "@/lib/audit";
 import { isValidLatinName } from "@/lib/username-ai";
 
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: resourceId } = await params;
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: resourceId },
+      select: {
+        id: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        middleName: true,
+        role: true,
+        avatarUrl: true,
+        bio: true,
+        isBlocked: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+    }
+
+    return NextResponse.json({ user });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Ошибка сервера" }, { status: 500 });
+  }
+}
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -45,9 +82,12 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { firstName, lastName, middleName, role, isBlocked } = body;
+    const { firstName, lastName, middleName, role, isBlocked, bio } = body;
 
     const data: any = {};
+    if (typeof bio === "string") {
+      data.bio = bio.trim().slice(0, 300);
+    }
     if (typeof firstName === "string") {
       const clean = firstName.trim();
       if (!isValidLatinName(clean)) {

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useRouter } from "next/navigation";
 import { MessageSquare, Search, Sparkles, Copy, Check, Users, GraduationCap, School } from "lucide-react";
@@ -11,6 +12,7 @@ import { request, json } from "@/components/tables/model";
 import { useAuth } from "@/components/providers/auth-context";
 import { useSocket } from "@/components/providers/socket-context";
 import { getRoleDisplayName } from "@/lib/auth/rbac";
+import { UserProfileModal } from "@/components/profile/user-profile-modal";
 
 export default function MembersPage() {
   const { user } = useAuth();
@@ -23,6 +25,7 @@ export default function MembersPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([request("/api/users"), request("/api/teachers")])
@@ -170,7 +173,10 @@ export default function MembersPage() {
                   className="glass-panel p-4 rounded-2xl border border-border hover:border-border-strong transition-all flex items-center justify-between gap-4 shadow-sm hover:shadow-md"
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="relative shrink-0">
+                    <div
+                      className={`relative shrink-0 ${account ? "cursor-pointer hover:opacity-85 transition-opacity" : ""}`}
+                      onClick={() => account && setSelectedProfileId(account)}
+                    >
                       <UserAvatar
                         src={p.user?.avatarUrl || p.avatarUrl}
                         name={`${p.firstName} ${p.lastName}`}
@@ -188,7 +194,17 @@ export default function MembersPage() {
 
                     <div className="min-w-0">
                       <h3 className="text-sm font-bold text-foreground truncate">
-                        {p.lastName} {p.firstName} {p.middleName || ""}
+                        {account ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProfileId(account)}
+                            className="hover:underline hover:text-accent transition-colors text-left font-bold"
+                          >
+                            {p.lastName} {p.firstName} {p.middleName || ""}
+                          </button>
+                        ) : (
+                          <>{p.lastName} {p.firstName} {p.middleName || ""}</>
+                        )}
                       </h3>
 
                       <div className="flex flex-wrap items-center gap-2 mt-1 min-w-0">
@@ -236,6 +252,12 @@ export default function MembersPage() {
             })}
           </div>
         )}
+        {/* Telegram Profile Modal */}
+        <UserProfileModal
+          userId={selectedProfileId}
+          isOpen={!!selectedProfileId}
+          onClose={() => setSelectedProfileId(null)}
+        />
       </div>
     </AppShell>
   );

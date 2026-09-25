@@ -22,6 +22,7 @@ import {
   Command,
   LogOut,
   LayoutGrid,
+  Images,
 } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-context";
 import {
@@ -39,6 +40,7 @@ export const schoolLinks = [
   { href: "/news", label: "Новости", icon: Newspaper },
   { href: "/events", label: "События", icon: CalendarDays },
   { href: "/files", label: "Файлы", icon: FolderOpen },
+  { href: "/albums", label: "Альбом класса", icon: Images },
   { href: "/chats", label: "Чаты", icon: MessageSquare },
   { href: "/tables", label: "Таблицы", icon: Table2 },
   { href: "/members", label: "Наш класс", icon: Users },

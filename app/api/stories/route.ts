@@ -127,7 +127,9 @@ async function notifyAuthor(authorId: string, title: string, message: string) {
 
 export async function GET() {
   try {
-    const stories = await getStoredStories();
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: "Войдите в аккаунт" }, { status: 401 });
+    const stories = (await getStoredStories()).map(story => ({ ...story, viewers: story.userId === user.id ? story.viewers : undefined }));
 
     // Group stories by userId
     const groupMap = new Map<

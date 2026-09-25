@@ -103,7 +103,9 @@ function formatViewersWord(count: number): string {
 
 export function StoriesSection({
   currentUser,
+  profileUserId,
 }: {
+  profileUserId?: string;
   currentUser: {
     id: string;
     firstName: string;
@@ -178,14 +180,14 @@ export function StoriesSection({
           const myGroup = data.groups.find((g: StoryGroup) => g.userId === currentUser?.id);
           setUserStories(myGroup ? myGroup.stories : []);
 
-          const otherGroups = data.groups.filter((g: StoryGroup) => g.userId !== currentUser?.id);
+          const otherGroups = data.groups.filter((g: StoryGroup) => g.userId !== currentUser?.id && (!profileUserId || g.userId === profileUserId));
           setClassStoryGroups(otherGroups);
         }
       }
     } catch (err) {
       console.error("Failed to load real stories:", err);
     }
-  }, [currentUser?.id]);
+  }, [currentUser?.id, profileUserId]);
 
   useEffect(() => {
     fetchRealStories();
@@ -292,7 +294,7 @@ export function StoriesSection({
 
   const getAllGroups = (): StoryGroup[] => {
     const list: StoryGroup[] = [];
-    if (userStories.length > 0 && currentUser) {
+    if (userStories.length > 0 && currentUser && (!profileUserId || profileUserId === currentUser.id)) {
       list.push({
         userId: currentUser.id,
         userName: `${currentUser.firstName} ${currentUser.lastName}`.trim() || currentUser.username,
@@ -625,33 +627,33 @@ export function StoriesSection({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="story-section space-y-3">
       {/* Section Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-1">
         <div className="flex flex-wrap items-center gap-2 min-w-0">
           <div className="shrink-0 w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 animate-pulse" />
           <h2 className="text-sm font-bold text-foreground tracking-tight">
-            Истории 7-«Б» класса
+            {profileUserId ? "Истории" : "Истории класса"}
           </h2>
           <span className="shrink-0 whitespace-nowrap text-[11px] px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-accent font-semibold">
             24 часа
           </span>
         </div>
 
-        <button
+        {(!profileUserId || profileUserId === currentUser?.id) && <button
           type="button"
           onClick={() => setIsCreateOpen(true)}
           className="text-xs font-semibold text-accent hover:text-accent-hover flex items-center gap-1 transition-colors"
         >
           <Plus size={14} />
           <span>Добавить</span>
-        </button>
+        </button>}
       </div>
 
       {/* Stories Carousel (Instagram & Telegram style) */}
       <div className="flex items-center gap-3.5 overflow-x-auto pb-2 pt-1 px-1 custom-scrollbar">
         {/* User's Story / Add Story Button */}
-        <div className="flex flex-col items-center gap-1.5 shrink-0 group">
+        {(!profileUserId || profileUserId === currentUser?.id) && <div className="flex flex-col items-center gap-1.5 shrink-0 group">
           <div className="relative">
             {userStories.length > 0 ? (
               <button
@@ -702,6 +704,7 @@ export function StoriesSection({
           </span>
         </div>
 
+        }
         {/* Classmates' Stories */}
         {getAllGroups()
           .filter((g) => g.userId !== currentUser?.id)
@@ -734,10 +737,10 @@ export function StoriesSection({
             );
           })}
 
-        {getAllGroups().filter((g) => g.userId !== currentUser?.id).length === 0 && (
+        {getAllGroups().length === 0 && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-surface-elevated/40 border border-border/60 text-xs text-foreground-muted select-none">
             <Sparkles size={13} className="text-accent shrink-0" />
-            <span className="text-[11px]">Истории одноклассников 7-«Б» появятся здесь</span>
+            <span className="text-[11px]">{profileUserId ? "Новых историй пока нет" : "Истории одноклассников появятся здесь"}</span>
           </div>
         )}
       </div>

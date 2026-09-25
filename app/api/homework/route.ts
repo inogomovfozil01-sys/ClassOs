@@ -121,45 +121,67 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const user = await getCurrentUser();
-    if (!user || !canPublishHomework(user.role))
+    if (!user || !canPublishHomework(user.role)) {
       return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
-    const { id, title, description, dueDate } = await req.json();
-    if (
-      typeof id !== "string" ||
-      typeof title !== "string" ||
-      !title.trim() ||
-      typeof dueDate !== "string" ||
-      !/^\d{4}-\d{2}-\d{2}$/.test(dueDate) ||
-      !Number.isFinite(new Date(dueDate).getTime())
-    )
-      return NextResponse.json(
-        { error: "Укажите задание и корректный срок" },
-        { status: 400 },
-      );
-    const existing = await prisma.homework.findUnique({ where: { id } });
-    if (!existing)
+    }
+
+    const body = await req.json();
+    const { id, subjectId, title, description, dueDate, attachments } = body;
+
+    if (!id || typeof id !== "string") {
+      return NextResponse.json({ error: "ID задания обязателен" }, { status: 400 });
+    }
+
+    const existing = await prisma.homework.findUnique({
+      where: { id },
+      include: { subject: true, attachments: true },
+    });
+
+    if (!existing) {
       return NextResponse.json(
         { error: "Задание не найдено" },
         { status: 404 },
       );
+    }
+
+    const updateData: any = {};
+    if (typeof subjectId === "string" && subjectId) updateData.subjectId = subjectId;
+    if (typeof title === "string" && title.trim()) updateData.title = title.trim();
+    if (typeof description === "string") updateData.description = description.trim();
+    if (dueDate) {
+      const parsed = new Date(dueDate);
+      if (!isNaN(parsed.getTime())) updateData.dueDate = parsed;
+    }
+
+    // Attachments update if provided
+    if (Array.isArray(attachments)) {
+      // Delete existing attachments and create new
+      await prisma.homeworkAttachment.deleteMany({ where: { homeworkId: id } });
+      if (attachments.length > 0) {
+        updateData.attachments = {
+          create: attachments.map((a: any) => ({
+            fileName: a.fileName,
+            fileUrl: a.fileUrl,
+            fileSize: a.fileSize || 0,
+            mimeType: a.mimeType || "application/octet-stream",
+          })),
+        };
+      }
+    }
+
     const homework = await prisma.homework.update({
       where: { id },
-      data: {
-        title: title.trim(),
-        description:
-          typeof description === "string"
-            ? description.trim()
-            : existing.description,
-        dueDate: new Date(dueDate),
-      },
+      data: updateData,
       include: { subject: true, attachments: true },
     });
+
     await notifyAllStudents({
       type: "HOMEWORK",
       title: `Изменено ДЗ: ${homework.subject.name}`,
       message: homework.title,
       link: `/homework/${id}`,
     });
+
     await logAuditEvent({
       userId: user.id,
       action: "HOMEWORK_UPDATED",
@@ -170,10 +192,51 @@ export async function PATCH(req: Request) {
         after: { title: homework.title, dueDate: homework.dueDate },
       },
     });
-    return NextResponse.json({ homework });
-  } catch {
+
+    return NextResponse.json({ success: true, homework });
+  } catch (error: any) {
+    console.error("Update homework error:", error);
     return NextResponse.json(
-      { error: "Не удалось изменить домашнее задание" },
+      { error: error.message || "Не удалось изменить домашнее задание" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const user = await getCurrentUser();
+    if (!user || !canPublishHomework(user.role)) {
+      return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "ID задания не указан" }, { status: 400 });
+    }
+
+    const existing = await prisma.homework.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: "Задание не найдено" }, { status: 404 });
+    }
+
+    await prisma.homework.delete({ where: { id } });
+
+    await logAuditEvent({
+      userId: user.id,
+      action: "HOMEWORK_DELETED",
+      entity: "HOMEWORK",
+      entityId: id,
+      details: { title: existing.title },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Delete homework error:", error);
+    return NextResponse.json(
+      { error: error.message || "Ошибка удаления задания" },
       { status: 500 },
     );
   }

@@ -1,6 +1,8 @@
 "use client";
 import { ViewportLayer } from "@/components/ui/viewport-layer";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { UserProfileModal } from "@/components/profile/user-profile-modal";
+import Link from "next/link";
 
 import React, { useState, useEffect, useRef } from "react";
 import { AppShell } from "@/components/layout/app-shell";
@@ -166,6 +168,7 @@ export default function ChatsPage() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [reply, setReply] = useState<any>(null);
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [chatFilter, setChatFilter] = useState<"ALL" | "CLASS" | "DIRECT">("ALL");
   const [messageQuery, setMessageQuery] = useState("");
@@ -1406,7 +1409,14 @@ export default function ChatsPage() {
                     <ArrowLeft className="w-5 h-5" />
                   </button>
 
-                  <div className="relative shrink-0">
+                  <div
+                    className={`relative shrink-0 ${activeConversation.otherUser?.id ? "cursor-pointer hover:opacity-85 transition-opacity" : ""}`}
+                    onClick={() => {
+                      if (activeConversation.otherUser?.id) {
+                        setSelectedProfileUserId(activeConversation.otherUser.id);
+                      }
+                    }}
+                  >
                     <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-accent/20 to-purple-500/20 border border-border flex items-center justify-center font-bold text-xs text-accent">
                       {activeConversation.type === "CLASS" ? (
                         <Users className="w-5 h-5 text-accent" />
@@ -1425,7 +1435,18 @@ export default function ChatsPage() {
 
                   <div className="min-w-0">
                     <h3 className="font-bold text-sm text-foreground truncate">
-                      {activeConversation.name}
+                      {activeConversation.otherUser?.id ? (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProfileUserId(activeConversation.otherUser.id)}
+                          className="hover:underline hover:text-accent transition-colors text-left font-bold"
+                          title="Открыть профиль"
+                        >
+                          {activeConversation.name}
+                        </button>
+                      ) : (
+                        activeConversation.name
+                      )}
                     </h3>
                     <p className="text-[11px] text-foreground-muted flex items-center gap-1.5 mt-0.5 break-words">
                       {activeConversation.type === "CLASS" ? (
@@ -1606,9 +1627,14 @@ export default function ChatsPage() {
                       >
                         {!isMe && !grouped && (
                           <div className="flex items-center gap-1.5 ml-2 mb-1">
-                            <span className="text-[11px] font-bold text-accent">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedProfileUserId(msg.senderId)}
+                              className="text-[11px] font-bold text-accent hover:underline text-left cursor-pointer"
+                              title="Посмотреть профиль"
+                            >
                               {msg.sender.lastName} {msg.sender.firstName}
-                            </span>
+                            </button>
                             {msg.sender.role && msg.sender.role !== "STUDENT" && (
                               <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/15 text-accent font-semibold">
                                 {msg.sender.role === "OWNER"
@@ -2142,7 +2168,11 @@ export default function ChatsPage() {
                       key={m.id || m.userId}
                       className="p-2.5 rounded-xl bg-surface-elevated/70 border border-border flex items-center justify-between gap-2"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className="flex items-center gap-2.5 min-w-0 cursor-pointer hover:opacity-85 transition-opacity"
+                        onClick={() => m.userId && setSelectedProfileUserId(m.userId)}
+                        title="Открыть профиль в стиле Telegram"
+                      >
                         <UserAvatar
                           src={m.user?.avatarUrl}
                           name={`${m.user?.firstName || ""} ${m.user?.lastName || ""}`}
@@ -2704,6 +2734,12 @@ export default function ChatsPage() {
           </div>
         </ViewportLayer>
       )}
+      {/* Telegram User Profile Drawer Modal */}
+      <UserProfileModal
+        userId={selectedProfileUserId}
+        isOpen={!!selectedProfileUserId}
+        onClose={() => setSelectedProfileUserId(null)}
+      />
     </AppShell>
   );
 }

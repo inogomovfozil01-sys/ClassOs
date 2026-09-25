@@ -20,6 +20,8 @@ import {
   Sparkles,
   Paperclip,
   Check,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { FileCard } from "@/components/media/file-card";
@@ -46,6 +48,15 @@ function HomeworkContent() {
   const [submitting, setSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Edit Modal State
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingHwId, setEditingHwId] = useState("");
+  const [editSubjectId, setEditSubjectId] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   // Leader AI quick draft text
   const [aiDraftPrompt, setAiDraftPrompt] = useState("");
@@ -104,11 +115,15 @@ function HomeworkContent() {
       });
       if (res.ok) {
         setHomeworkList((prev) =>
-          prev.map((h) =>
-            h.id === homeworkId ? { ...h, personalStatus: newStatus } : h,
+          prev.map((hw) =>
+            hw.id === homeworkId ? { ...hw, personalStatus: newStatus } : hw,
           ),
         );
-        toast.success("Статус обновлён");
+        toast.success(
+          newStatus === "DONE"
+            ? "Отлично! Задание выполнено! 🎉"
+            : "Статус обновлен",
+        );
       }
     } catch {
       toast.error("Не удалось обновить статус");
@@ -117,23 +132,22 @@ function HomeworkContent() {
 
   const handleAiDraft = async () => {
     if (!aiDraftPrompt.trim()) return;
-    setIsGeneratingAi(true);
     try {
-      const res = await fetch("/api/ai/leader-draft", {
+      setIsGeneratingAi(true);
+      const res = await fetch("/api/ai/parse-homework", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: aiDraftPrompt.trim() }),
+        body: JSON.stringify({ text: aiDraftPrompt }),
       });
+      if (!res.ok) throw new Error("AI не смог распознать текст");
       const data = await res.json();
-      if (data.draft) {
-        if (data.draft.subjectId) setSubjectId(data.draft.subjectId);
-        if (data.draft.title) setTitle(data.draft.title);
-        if (data.draft.description) setDescription(data.draft.description);
-        if (data.draft.dueDate) setDueDate(data.draft.dueDate);
-        toast.success("Черновик задания сформирован AI");
-      }
-    } catch {
-      toast.error("Ошибка генерации черновика");
+      if (data.subjectId) setSubjectId(data.subjectId);
+      if (data.title) setTitle(data.title);
+      if (data.description) setDescription(data.description);
+      if (data.dueDate) setDueDate(data.dueDate);
+      toast.success("AI заполнил форму задания! Проверьте и сохраните.");
+    } catch (e: any) {
+      toast.error(e.message || "Ошибка распознавания");
     } finally {
       setIsGeneratingAi(false);
     }
@@ -141,25 +155,18 @@ function HomeworkContent() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subjectId || !title || !dueDate) {
-      toast.error("Заполните обязательные поля");
-      return;
-    }
+    if (!subjectId || !title || !dueDate) return;
 
     setSubmitting(true);
     try {
       const attachments = [];
       for (const file of files) {
-        const form = new FormData();
-        form.append("file", file);
-        const d = await uploadFile(form, setUploadProgress);
-        attachments.push({
-          fileName: file.name,
-          fileUrl: d.file.downloadUrl,
-          fileSize: file.size,
-          mimeType: file.type,
-        });
+        const fd = new FormData();
+        fd.append("file", file);
+        const uploaded = await uploadFile(fd, (p) => setUploadProgress(p));
+        attachments.push(uploaded);
       }
+
       const res = await fetch("/api/homework", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -178,119 +185,169 @@ function HomeworkContent() {
       toast.success("Домашнее задание опубликовано");
       setIsCreateOpen(false);
       setTitle("");
-      setFiles([]);
       setDescription("");
+      setFiles([]);
       fetchData();
     } catch (err: any) {
       toast.error(err.message);
     } finally {
       setSubmitting(false);
+      setUploadProgress(0);
     }
   };
 
-  const filteredHomework = homeworkList.filter((h) => {
-    const date = localDate(h.dueDate),
-      today = localDate(new Date());
-    if (period === "today" && date !== today) return false;
-    if (period === "tomorrow" && date !== localDate(addDays(new Date(), 1)))
+  const handleOpenEdit = (hw: any) => {
+    setEditingHwId(hw.id);
+    setEditSubjectId(hw.subjectId);
+    setEditTitle(hw.title);
+    setEditDescription(hw.description || "");
+    setEditDueDate(
+      hw.dueDate ? new Date(hw.dueDate).toISOString().split("T")[0] : "",
+    );
+    setIsEditOpen(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingHwId || !editTitle.trim() || !editDueDate) return;
+
+    setEditSubmitting(true);
+    try {
+      const res = await fetch("/api/homework", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingHwId,
+          subjectId: editSubjectId,
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+          dueDate: editDueDate,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Не удалось обновить");
+
+      toast.success("Домашнее задание обновлено! 📚");
+      setIsEditOpen(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Ошибка обновления");
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleDeleteHomework = async (id: string) => {
+    if (!confirm("Вы уверены, что хотите удалить это домашнее задание?")) return;
+
+    try {
+      const res = await fetch(`/api/homework?id=${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Не удалось удалить");
+
+      toast.success("Домашнее задание удалено");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Ошибка удаления");
+    }
+  };
+
+  const filteredHomework = homeworkList.filter((hw) => {
+    if (filterSubject !== "ALL" && hw.subjectId !== filterSubject) return false;
+    if (filterStatus !== "ALL") {
+      const currentStatus = hw.personalStatus || "NOT_STARTED";
+      if (filterStatus !== currentStatus) return false;
+    }
+    const due = localDate(hw.dueDate);
+    const today = localDate(new Date());
+    if (period === "today" && due !== today) return false;
+    if (period === "tomorrow" && due !== localDate(addDays(new Date(), 1)))
       return false;
     if (
       period === "week" &&
-      (date < localDate(monday(new Date())) ||
-        date > localDate(addDays(monday(new Date()), 6)))
+      (due < today || due > localDate(addDays(new Date(), 7)))
     )
       return false;
-    if (filterSubject !== "ALL" && h.subjectId !== filterSubject) return false;
-    if (filterStatus === "DONE" && h.personalStatus !== "DONE") return false;
-    if (filterStatus === "ACTIVE" && h.personalStatus === "DONE") return false;
     return true;
   });
 
   return (
     <AppShell title="Домашние задания">
-      <div className="space-y-6">
-        {/* Top Header */}
+      <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
-              Домашние задания
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+              <BookOpen className="text-accent w-7 h-7" />
+              <span>Домашние задания 7-«Б»</span>
             </h1>
             <p className="text-xs text-foreground-muted mt-1">
-              Задания по срокам. Статус — ваша личная отметка, а не оценка
-              учителя.
+              Актуальные задания от учителей и старосты с материалами и дедлайнами
             </p>
           </div>
 
           {canCreate && (
             <button
               onClick={() => setIsCreateOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-accent hover:bg-accent-hover text-white text-xs font-semibold  transition-all self-start sm:self-auto"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-accent hover:bg-accent-hover text-white text-xs font-semibold shadow-md transition-all self-start sm:self-auto"
             >
-              <Plus className="w-4 h-4" />
+              <Plus size={16} />
               <span>Задать ДЗ</span>
             </button>
           )}
         </div>
 
-        <div className="content-tabs" role="tablist" aria-label="Срок задания">
-          {[
-            ["today", "Сегодня"],
-            ["tomorrow", "Завтра"],
-            ["week", "На этой неделе"],
-            ["all", "Все"],
-          ].map(([value, label]) => (
+        {/* Filter controls */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 flex gap-2 overflow-x-auto pb-1 sm:pb-0">
             <button
-              role="tab"
-              key={value}
-              aria-selected={period === value}
-              onClick={() => setPeriod(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        {/* Filter pills */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Status filters */}
-          <div className="p-1 rounded-2xl glass-panel border border-border flex items-center gap-1 text-xs">
-            <button
-              onClick={() => setFilterStatus("ALL")}
-              className={`px-3 py-1.5 rounded-xl font-medium transition-all ${
-                filterStatus === "ALL"
-                  ? "bg-accent text-white shadow-sm"
-                  : "text-foreground-muted hover:text-foreground"
+              onClick={() => setPeriod("today")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+                period === "today"
+                  ? "bg-accent text-white shadow-xs"
+                  : "bg-surface-elevated text-foreground-muted hover:text-foreground"
               }`}
             >
-              Все
+              На сегодня
             </button>
             <button
-              onClick={() => setFilterStatus("ACTIVE")}
-              className={`px-3 py-1.5 rounded-xl font-medium transition-all ${
-                filterStatus === "ACTIVE"
-                  ? "bg-accent text-white shadow-sm"
-                  : "text-foreground-muted hover:text-foreground"
+              onClick={() => setPeriod("tomorrow")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+                period === "tomorrow"
+                  ? "bg-accent text-white shadow-xs"
+                  : "bg-surface-elevated text-foreground-muted hover:text-foreground"
               }`}
             >
-              К выполнению
+              На завтра
             </button>
             <button
-              onClick={() => setFilterStatus("DONE")}
-              className={`px-3 py-1.5 rounded-xl font-medium transition-all ${
-                filterStatus === "DONE"
-                  ? "bg-success text-white shadow-sm"
-                  : "text-foreground-muted hover:text-foreground"
+              onClick={() => setPeriod("week")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+                period === "week"
+                  ? "bg-accent text-white shadow-xs"
+                  : "bg-surface-elevated text-foreground-muted hover:text-foreground"
               }`}
             >
-              Сделано
+              Ближайшая неделя
+            </button>
+            <button
+              onClick={() => setPeriod("all")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+                period === "all"
+                  ? "bg-accent text-white shadow-xs"
+                  : "bg-surface-elevated text-foreground-muted hover:text-foreground"
+              }`}
+            >
+              Все задания
             </button>
           </div>
 
-          {/* Subject filter */}
-          {subjects.length > 0 && (
+          <div className="flex gap-2">
             <select
               value={filterSubject}
               onChange={(e) => setFilterSubject(e.target.value)}
-              className="bg-surface-elevated border border-border rounded-2xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-accent"
+              className="bg-surface-elevated border border-border rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-accent"
             >
               <option value="ALL">Все предметы</option>
               {subjects.map((s) => (
@@ -299,23 +356,39 @@ function HomeworkContent() {
                 </option>
               ))}
             </select>
-          )}
+
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="bg-surface-elevated border border-border rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-accent"
+            >
+              <option value="ALL">Любой статус</option>
+              <option value="NOT_STARTED">Не начато</option>
+              <option value="IN_PROGRESS">В процессе</option>
+              <option value="DONE">Готово</option>
+            </select>
+          </div>
         </div>
 
-        {/* Homework list or Empty state */}
+        {/* Homework list */}
         {loading ? (
-          <div className="py-12 text-center text-xs text-foreground-muted">
-            Загрузка заданий...
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-32 rounded-3xl bg-surface-elevated animate-pulse border border-border"
+              />
+            ))}
           </div>
         ) : filteredHomework.length === 0 ? (
-          <div className="glass-panel rounded-3xl p-10 text-center space-y-3 border border-border">
-            <div className="w-12 h-12 rounded-2xl bg-surface-elevated border border-border flex items-center justify-center mx-auto text-foreground-muted">
-              <BookOpen className="w-6 h-6 text-accent" />
+          <div className="text-center py-16 px-4 rounded-3xl border border-dashed border-border space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-surface-elevated border border-border flex items-center justify-center text-foreground-muted mx-auto">
+              <CheckCircle2 size={24} />
             </div>
-            <h4 className="font-bold text-sm text-foreground">
-              Заданий пока нет
-            </h4>
-            <p className="text-xs text-foreground-muted max-w-xs mx-auto">
+            <h3 className="font-semibold text-foreground text-sm">
+              Нет заданий по выбранным фильтрам
+            </h3>
+            <p className="text-xs text-foreground-muted max-w-sm mx-auto">
               {canCreate
                 ? "Нажмите кнопку ниже, чтобы записать и опубликовать первое задание для класса."
                 : "Лидер или учителя ещё не добавили домашних заданий."}
@@ -323,44 +396,70 @@ function HomeworkContent() {
             {canCreate && (
               <button
                 onClick={() => setIsCreateOpen(true)}
-                className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-xs font-semibold  transition-all"
+                className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-xs font-semibold transition-all shadow-xs"
               >
-                + Задать первое ДЗ
+                + Задать ДЗ
               </button>
             )}
           </div>
         ) : (
-          <div className="homework-list">
+          <div className="homework-list space-y-3.5">
             {filteredHomework.map((hw) => {
               const due = new Date(hw.dueDate);
               const isOverdue =
                 due < new Date() && hw.personalStatus !== "DONE";
 
               return (
-                <div key={hw.id} className="homework-row space-y-3 relative">
+                <div
+                  key={hw.id}
+                  className="glass-panel p-5 rounded-3xl border border-border space-y-3 relative hover:border-border-strong transition-all shadow-xs"
+                >
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-xs font-bold px-2.5 py-1 rounded-xl bg-accent/15 text-accent border border-accent/25">
                         {hw.subject?.name}
                       </span>
-                      <div className="flex items-center gap-1.5 text-xs text-foreground-muted">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span
-                          className={
-                            isOverdue ? "text-danger font-semibold" : ""
-                          }
-                        >
-                          До {due.toLocaleDateString("ru-RU")}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 text-xs text-foreground-muted">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span
+                            className={
+                              isOverdue ? "text-danger font-semibold" : ""
+                            }
+                          >
+                            До {due.toLocaleDateString("ru-RU")}
+                          </span>
+                        </div>
+
+                        {/* Edit & Delete for Leader / Teacher / Admin */}
+                        {canCreate && (
+                          <div className="flex items-center gap-1 ml-2">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEdit(hw)}
+                              className="p-1.5 rounded-lg bg-surface-elevated hover:bg-surface-hover text-foreground-muted hover:text-accent border border-border transition-colors"
+                              title="Редактировать ДЗ"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteHomework(hw.id)}
+                              className="p-1.5 rounded-lg bg-danger/10 hover:bg-danger/20 text-danger border border-danger/20 transition-colors"
+                              title="Удалить ДЗ"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     <h3 className="font-bold text-base text-foreground leading-snug">
-                      <Link href={`/homework/${hw.id}`}>{hw.title} →</Link>
+                      <Link href={`/homework/${hw.id}`} className="hover:text-accent transition-colors">
+                        {hw.title} →
+                      </Link>
                     </h3>
-                    <p className="text-[11px] text-foreground-muted">
-                      Задано {formatDay(hw.createdAt)}
-                    </p>
 
                     {hw.description && (
                       <p className="text-xs text-foreground-muted leading-relaxed whitespace-pre-wrap">
@@ -375,8 +474,8 @@ function HomeworkContent() {
                             key={att.id}
                             name={att.fileName}
                             url={att.fileUrl}
-                            mimeType={att.mimeType}
                             size={att.fileSize}
+                            mimeType={att.mimeType}
                           />
                         ))}
                       </div>
@@ -435,7 +534,7 @@ function HomeworkContent() {
             className="fixed inset-0"
             onClick={() => setIsCreateOpen(false)}
           />
-          <div className="w-full max-w-lg glass-panel rounded-3xl p-6 relative z-10 border border-border-strong  max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <div className="w-full max-w-lg glass-panel rounded-3xl p-6 relative z-10 border border-border-strong shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between pb-3 border-b border-border mb-4">
               <div className="flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-accent" />
@@ -555,9 +654,110 @@ function HomeworkContent() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3 bg-accent hover:bg-accent-hover text-white rounded-xl font-semibold  transition-all disabled:opacity-50"
+                  className="w-full py-3 bg-accent hover:bg-accent-hover text-white rounded-xl font-semibold transition-all disabled:opacity-50 shadow-md"
                 >
                   {submitting ? "Публикация..." : "Опубликовать для класса"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </ViewportLayer>
+      )}
+
+      {/* Edit Homework Modal */}
+      {isEditOpen && (
+        <ViewportLayer className="legacy-sheet fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div
+            className="fixed inset-0"
+            onClick={() => setIsEditOpen(false)}
+          />
+          <div className="w-full max-w-lg glass-panel rounded-3xl p-6 relative z-10 border border-border-strong shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between pb-3 border-b border-border mb-4">
+              <div className="flex items-center gap-2">
+                <Pencil className="w-5 h-5 text-accent" />
+                <h3 className="font-bold text-base text-foreground">
+                  Редактировать домашнее задание
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsEditOpen(false)}
+                className="p-1 rounded-full text-foreground-muted hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-medium text-foreground-muted mb-1.5">
+                  Предмет
+                </label>
+                <select
+                  required
+                  value={editSubjectId}
+                  onChange={(e) => setEditSubjectId(e.target.value)}
+                  className="w-full bg-surface-elevated border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:border-accent"
+                >
+                  {subjects.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-medium text-foreground-muted mb-1.5">
+                  Что задали? (краткий заголовок)
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full bg-surface-elevated border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:border-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-foreground-muted mb-1.5">
+                  Срок сдачи (к какому числу)
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={editDueDate}
+                  onChange={(e) => setEditDueDate(e.target.value)}
+                  className="w-full bg-surface-elevated border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:border-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-foreground-muted mb-1.5">
+                  Подробное описание или заметка
+                </label>
+                <textarea
+                  rows={4}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full bg-surface-elevated border border-border rounded-xl p-3 text-foreground placeholder:text-foreground-muted/50 focus:outline-none focus:border-accent resize-none"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditOpen(false)}
+                  className="px-4 py-2.5 rounded-xl border border-border hover:bg-surface-elevated text-foreground-muted font-medium transition-colors"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSubmitting}
+                  className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white font-medium shadow-md transition-all disabled:opacity-50"
+                >
+                  {editSubmitting ? "Сохранение..." : "Сохранить изменения"}
                 </button>
               </div>
             </form>

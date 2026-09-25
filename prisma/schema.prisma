@@ -16,6 +16,7 @@ model User {
   middleName         String?
   role               String    @default("STUDENT") // OWNER, ADMIN, LEADER, TEACHER, STUDENT
   avatarUrl          String?
+  bio                String    @default("")
   isBlocked          Boolean   @default(false)
   mustChangePassword Boolean   @default(false)
   createdAt          DateTime  @default(now())
@@ -44,6 +45,29 @@ model User {
   homeworkCreated    Homework[]        @relation("HomeworkCreator")
   pollsCreated       Poll[]            @relation("PollCreator")
   eventsCreated      ClassEvent[]      @relation("EventCreator")
+}
+
+model ClassAlbum {
+  id          String       @id @default(cuid())
+  title       String
+  description String       @default("")
+  eventDate   String?
+  audience    String       @default("STUDENTS")
+  createdById String
+  createdAt   DateTime     @default(now())
+  photos      AlbumPhoto[]
+}
+
+model AlbumPhoto {
+  id           String     @id @default(cuid())
+  albumId      String
+  album        ClassAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  uploaderId   String
+  caption      String     @default("")
+  storageKey   String     @unique
+  createdAt    DateTime   @default(now())
+
+  @@index([albumId, createdAt])
 }
 
 model Session {
