@@ -63,7 +63,7 @@ export function AuthForm({ setup = false }: { setup?: boolean }) {
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-semibold mb-3">
             <School size={14} />
-            <span>Школа №180 · 7-«А»</span>
+            <span>Школа №180 · 7-«Б»</span>
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
             ClassOS

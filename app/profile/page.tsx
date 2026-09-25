@@ -335,7 +335,7 @@ export default function ProfilePage() {
 
                   <span className="inline-flex items-center gap-1.5">
                     <School size={13} />
-                    <span>7-«А» класс · Школа №180</span>
+                    <span>7-«Б» класс · Школа №180</span>
                   </span>
 
                   <span className="inline-flex items-center gap-1.5">
@@ -921,7 +921,7 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                 <div className="p-4 rounded-2xl bg-surface-elevated/40 border border-border space-y-1">
                   <p className="text-[11px] text-foreground-muted">Класс</p>
-                  <p className="text-base font-bold text-foreground">7-«А» класс</p>
+                  <p className="text-base font-bold text-foreground">7-«Б» класс</p>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-surface-elevated/40 border border-border space-y-1">

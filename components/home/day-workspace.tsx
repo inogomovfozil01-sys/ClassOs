@@ -8,6 +8,7 @@ import { EmptyState, Skeleton } from "@/components/ui/workspace";
 import { useDiary } from "@/components/diary/use-diary";
 import { DiaryLesson } from "@/components/diary/diary-lesson";
 import { HomeworkRow } from "@/components/diary/homework-row";
+import { StoriesSection } from "@/components/profile/stories-section";
 import {
   lessonsOnDate,
   localDate,
@@ -95,7 +96,7 @@ export function DayWorkspace({ today = false }: { today?: boolean }) {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface/80 backdrop-blur-md border border-border text-[11px] font-semibold text-foreground-muted">
                   <School size={13} className="text-accent" />
-                  <span>7-«А» класс · Школа №180</span>
+                  <span>7-«Б» класс · Школа №180</span>
                 </span>
 
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-semibold text-emerald-500">
@@ -173,6 +174,11 @@ export function DayWorkspace({ today = false }: { today?: boolean }) {
               <span>Одноклассники</span>
             </Link>
           </div>
+        </div>
+
+        {/* Stories of 7-«Б» Class (Instagram / Telegram style) */}
+        <div className="glass-panel rounded-3xl p-4 sm:p-5 border border-border shadow-lg">
+          <StoriesSection currentUser={user} />
         </div>
 
         {error ? (

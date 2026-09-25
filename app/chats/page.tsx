@@ -1428,7 +1428,7 @@ export default function ChatsPage() {
                     </h3>
                     <p className="text-[11px] text-foreground-muted flex items-center gap-1.5 mt-0.5">
                       {activeConversation.type === "CLASS" ? (
-                        "Общий чат 7-«А» класса"
+                        "Общий чат 7-«Б» класса"
                       ) : activeConversation.type === "GROUP" ? (
                         `${groupDetails?.members?.length || activeConversation.membersCount || 0} участников`
                       ) : (
@@ -2004,7 +2004,7 @@ export default function ChatsPage() {
               </div>
               <div className="space-y-1">
                 <h3 className="font-bold text-lg text-foreground">
-                  Мессенджер 7-«А» класса
+                  Мессенджер 7-«Б» класса
                 </h3>
                 <p className="text-xs text-foreground-muted max-w-sm mx-auto leading-relaxed">
                   Выберите диалог из списка слева, чтобы читать сообщения, отправлять фотографии, файлы и голосовые заметки.
