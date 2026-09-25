@@ -1,4 +1,5 @@
 "use client";
+import { ViewportLayer } from "@/components/ui/viewport-layer";
 
 import React, { useState } from "react";
 import {
@@ -146,7 +147,7 @@ export function JarvisPanel({ isOpen, onClose }: JarvisPanelProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
+    <ViewportLayer className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="fixed inset-0" onClick={onClose} />
       <div className="w-full sm:w-[460px] h-full glass-panel border-l border-border-strong flex flex-col relative z-10 animate-slide-left ">
         {/* Header */}
@@ -292,6 +293,6 @@ export function JarvisPanel({ isOpen, onClose }: JarvisPanelProps) {
           </div>
         </form>
       </div>
-    </div>
+    </ViewportLayer>
   );
 }

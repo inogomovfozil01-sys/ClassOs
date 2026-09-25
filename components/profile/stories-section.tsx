@@ -1,4 +1,5 @@
 "use client";
+import { ViewportLayer } from "@/components/ui/viewport-layer";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
@@ -626,13 +627,13 @@ export function StoriesSection({
   return (
     <div className="space-y-3">
       {/* Section Header */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 animate-pulse" />
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <div className="shrink-0 w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 animate-pulse" />
           <h2 className="text-sm font-bold text-foreground tracking-tight">
             Истории 7-«Б» класса
           </h2>
-          <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-accent font-semibold">
+          <span className="shrink-0 whitespace-nowrap text-[11px] px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-accent font-semibold">
             24 часа
           </span>
         </div>
@@ -695,15 +696,6 @@ export function StoriesSection({
               </button>
             )}
 
-            {/* Plus Icon Badge */}
-            <button
-              type="button"
-              onClick={() => setIsCreateOpen(true)}
-              className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center border-2 border-surface shadow-md hover:scale-110 active:scale-90 transition-transform"
-              title="Добавить историю"
-            >
-              <Plus size={12} strokeWidth={3} />
-            </button>
           </div>
           <span className="text-[11px] font-medium text-foreground max-w-[68px] truncate text-center">
             {userStories.length > 0 ? "Ваша история" : "Добавить"}
@@ -754,7 +746,7 @@ export function StoriesSection({
           ADD STORY MODAL (INSTAGRAM / TELEGRAM STYLE)
           ======================================================== */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+        <ViewportLayer className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
           <div className="fixed inset-0" onClick={() => setIsCreateOpen(false)} />
 
           <div className="w-full max-w-md glass-panel rounded-3xl p-6 relative z-10 border border-border shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -1015,14 +1007,14 @@ export function StoriesSection({
               </div>
             </form>
           </div>
-        </div>
+        </ViewportLayer>
       )}
 
       {/* ========================================================
           FULLSCREEN STORY VIEWER (INSTAGRAM / TELEGRAM STYLE)
           ======================================================== */}
       {activeViewerGroup && currentStory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-2xl animate-fade-in select-none">
+        <ViewportLayer className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-2xl animate-fade-in select-none">
           {/* Backdrop click to close */}
           <div
             className="fixed inset-0"
@@ -1122,20 +1114,20 @@ export function StoriesSection({
               </div>
 
               {/* Author & Controls */}
-              <div className="flex items-center justify-between text-white">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-0.5 rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600">
+              <div className="flex items-center justify-between gap-2 text-white">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="shrink-0 p-0.5 rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600">
                     <UserAvatar
                       src={currentStory.avatarUrl || activeViewerGroup.avatarUrl}
                       name={currentStory.authorName}
                       size={36}
                     />
                   </div>
-                  <div>
-                    <p className="text-xs font-bold leading-tight drop-shadow-md">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold leading-tight drop-shadow-md truncate" title={currentStory.authorName}>
                       {currentStory.authorName}
                     </p>
-                    <p className="text-[10px] text-white/70 flex items-center gap-1">
+                    <p className="text-[10px] text-white/70 flex flex-wrap items-center gap-1">
                       <span>{currentStory.authorRole || "7-«Б»"}</span>
                       <span>·</span>
                       <span>{formatRelativeTime(currentStory.createdAt)}</span>
@@ -1143,7 +1135,7 @@ export function StoriesSection({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   {/* Sound mute toggle for video */}
                   {(currentStory.mediaType === "video" ||
                     currentStory.mediaUrl?.includes(".mp4") ||
@@ -1381,7 +1373,7 @@ export function StoriesSection({
               </div>
             )}
           </div>
-        </div>
+        </ViewportLayer>
       )}
     </div>
   );

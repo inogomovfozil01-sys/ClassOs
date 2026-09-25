@@ -191,9 +191,9 @@ export default function MembersPage() {
                         {p.lastName} {p.firstName} {p.middleName || ""}
                       </h3>
 
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 mt-1 min-w-0">
                         <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${getRoleStyle(
+                          className={`max-w-full break-words text-[10px] px-2 py-0.5 rounded-full border font-medium ${getRoleStyle(
                             p.role,
                           )}`}
                         >

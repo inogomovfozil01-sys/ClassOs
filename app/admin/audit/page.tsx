@@ -78,9 +78,9 @@ export default function AdminAuditPage() {
                   key={log.id}
                   className="p-4 sm:px-6 space-y-1.5 hover:bg-surface-hover/30 transition-colors"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-foreground font-mono">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                      <span className="text-xs font-bold text-foreground font-mono break-all">
                         {log.action}
                       </span>
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface-elevated border border-border text-foreground-muted uppercase font-bold">
@@ -92,7 +92,7 @@ export default function AdminAuditPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-foreground-muted">
+                  <div className="flex flex-wrap items-center justify-between gap-2 break-words text-xs text-foreground-muted">
                     <span>
                       Инициатор:{" "}
                       <strong className="text-foreground">

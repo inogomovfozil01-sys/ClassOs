@@ -101,8 +101,8 @@ export function NotificationCenter() {
             onClick={() => setIsOpen(false)}
           />
           <div className="notification-popover absolute right-0 mt-2 w-80 sm:w-96 rounded-3xl glass-panel p-4 z-50  animate-fade-in border border-border-strong">
-            <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
-              <div className="flex items-center gap-2">
+            <div className="notification-heading pb-3 border-b border-border mb-3">
+              <div className="flex flex-wrap items-center gap-2 min-w-0">
                 <span className="font-bold text-sm text-foreground">
                   Уведомления
                 </span>
@@ -112,19 +112,20 @@ export function NotificationCenter() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1">
+              <div className="notification-heading-actions">
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllRead}
                     className="text-[11px] text-accent hover:underline flex items-center gap-1 px-1.5 py-1 rounded-lg"
                   >
-                    <CheckCheck className="w-3.5 h-3.5" />
+                    <CheckCheck className="w-3.5 h-3.5 shrink-0" />
                     <span>Прочитать все</span>
                   </button>
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1 text-foreground-muted hover:text-foreground rounded-lg"
+                  aria-label="Закрыть уведомления"
+                  className="icon-button"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -158,7 +159,7 @@ export function NotificationCenter() {
                         <p className="text-xs font-semibold truncate">
                           {item.title}
                         </p>
-                        <p className="text-[11px] mt-0.5 leading-relaxed text-foreground-muted">
+                        <p className="text-[11px] mt-0.5 leading-relaxed text-foreground-muted break-words">
                           {item.message}
                         </p>
                         <span className="text-[9px] text-foreground-muted/60 mt-1 block">

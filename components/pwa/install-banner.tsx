@@ -1,4 +1,5 @@
 "use client";
+import { ViewportLayer } from "@/components/ui/viewport-layer";
 
 import React, { useState, useEffect } from "react";
 import { Download, Check, Share, X, Smartphone } from "lucide-react";
@@ -81,7 +82,7 @@ export function InstallPWAButton() {
 
       {/* iOS / Browser Install Instructions Modal */}
       {showIOSModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+        <ViewportLayer className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-sm glass-panel rounded-3xl p-6 border border-border-strong text-left">
             <div className="flex items-center justify-between pb-3 border-b border-border mb-4">
               <div className="flex items-center gap-2">
@@ -132,7 +133,7 @@ export function InstallPWAButton() {
               Понятно
             </button>
           </div>
-        </div>
+        </ViewportLayer>
       )}
     </>
   );

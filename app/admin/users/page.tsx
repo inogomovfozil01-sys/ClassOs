@@ -1,4 +1,5 @@
 "use client";
+import { ViewportLayer } from "@/components/ui/viewport-layer";
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -282,14 +283,14 @@ function AdminUsersContent() {
                     key={u.id}
                     className="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-surface-hover/40 transition-colors"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-10 h-10 rounded-2xl bg-surface-elevated border border-border flex items-center justify-center font-bold text-xs text-foreground shrink-0">
                         {u.firstName[0]}
                         {u.lastName[0]}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-sm text-foreground truncate">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="w-full font-semibold text-sm text-foreground break-words">
                             {u.lastName} {u.firstName} {u.middleName || ""}
                           </p>
                           <span
@@ -305,14 +306,14 @@ function AdminUsersContent() {
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-foreground-muted font-mono mt-0.5">
+                        <p className="text-xs text-foreground-muted font-mono mt-0.5 break-all">
                           @{u.username}
                         </p>
                       </div>
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <div className="user-row-actions">
                       {!isOwnerUser && (
                         <>
                           {/* Role selector */}
@@ -381,7 +382,7 @@ function AdminUsersContent() {
 
         {/* Create User Modal */}
         {isCreateOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <ViewportLayer className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
             <div
               className="fixed inset-0"
               onClick={() => setIsCreateOpen(false)}
@@ -509,12 +510,12 @@ function AdminUsersContent() {
                 </button>
               </form>
             </div>
-          </div>
+          </ViewportLayer>
         )}
 
         {/* Reset Password Modal */}
         {resetModalUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <ViewportLayer className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
             <div
               className="fixed inset-0"
               onClick={() => setResetModalUser(null)}
@@ -560,7 +561,7 @@ function AdminUsersContent() {
                 </button>
               </form>
             </div>
-          </div>
+          </ViewportLayer>
         )}
       </div>
     </AppShell>

@@ -1,4 +1,5 @@
 "use client";
+import { ViewportLayer } from "@/components/ui/viewport-layer";
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -429,7 +430,7 @@ function HomeworkContent() {
 
       {/* Creation Modal / Sheet */}
       {isCreateOpen && (
-        <div className="legacy-sheet fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+        <ViewportLayer className="legacy-sheet fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
           <div
             className="fixed inset-0"
             onClick={() => setIsCreateOpen(false)}
@@ -561,7 +562,7 @@ function HomeworkContent() {
               </div>
             </form>
           </div>
-        </div>
+        </ViewportLayer>
       )}
     </AppShell>
   );

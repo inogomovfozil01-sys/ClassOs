@@ -1,4 +1,5 @@
 "use client";
+import { ViewportLayer } from "@/components/ui/viewport-layer";
 import { UserAvatar } from "@/components/ui/user-avatar";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -1396,7 +1397,7 @@ export default function ChatsPage() {
           {activeConversation ? (
             <>
               {/* Chat Top Bar */}
-              <div className="h-16 px-4 border-b border-border bg-surface-elevated/60 backdrop-blur-xl flex items-center justify-between shrink-0 shadow-xs">
+              <div className="chat-heading px-4 border-b border-border bg-surface-elevated/60 backdrop-blur-xl shrink-0 shadow-xs">
                 <div className="flex items-center gap-3 min-w-0">
                   <button
                     onClick={() => setActiveConvId(null)}
@@ -1426,7 +1427,7 @@ export default function ChatsPage() {
                     <h3 className="font-bold text-sm text-foreground truncate">
                       {activeConversation.name}
                     </h3>
-                    <p className="text-[11px] text-foreground-muted flex items-center gap-1.5 mt-0.5">
+                    <p className="text-[11px] text-foreground-muted flex items-center gap-1.5 mt-0.5 break-words">
                       {activeConversation.type === "CLASS" ? (
                         "Общий чат 7-«Б» класса"
                       ) : activeConversation.type === "GROUP" ? (
@@ -1449,7 +1450,7 @@ export default function ChatsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="chat-heading-actions">
                   {/* Toggle in-chat Search */}
                   <button
                     type="button"
@@ -2569,7 +2570,7 @@ export default function ChatsPage() {
 
       {/* New Chat Modal */}
       {isNewChatOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+        <ViewportLayer className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
           <div
             className="fixed inset-0"
             onClick={() => setIsNewChatOpen(false)}
@@ -2701,7 +2702,7 @@ export default function ChatsPage() {
               </form>
             )}
           </div>
-        </div>
+        </ViewportLayer>
       )}
     </AppShell>
   );

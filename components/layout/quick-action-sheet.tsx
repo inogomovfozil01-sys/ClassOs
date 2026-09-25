@@ -1,4 +1,5 @@
 "use client";
+import { ViewportLayer } from "@/components/ui/viewport-layer";
 
 import React from "react";
 import { useRouter } from "next/navigation";
@@ -95,7 +96,7 @@ export function QuickActionSheet({ isOpen, onClose }: QuickActionSheetProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <ViewportLayer className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="fixed inset-0" onClick={onClose} />
       <div className="w-full sm:max-w-md bg-surface border border-border-strong rounded-t-3xl sm:rounded-3xl p-5  relative z-10 animate-slide-up pb-safe max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
@@ -140,6 +141,6 @@ export function QuickActionSheet({ isOpen, onClose }: QuickActionSheetProps) {
           })}
         </div>
       </div>
-    </div>
+    </ViewportLayer>
   );
 }

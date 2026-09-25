@@ -10,6 +10,7 @@ import {
   canPublishHomework,
   canPublishNews,
   canManageUsers,
+  canAccessClassFiles,
 } from "@/lib/auth/rbac";
 export function CommandPalette({
   isOpen,
@@ -109,7 +110,7 @@ export function CommandPalette({
           },
         ]
       : []),
-    ...schoolLinks.map((i) => ({
+    ...schoolLinks.filter((i) => i.href !== "/files" || canAccessClassFiles(user?.role)).map((i) => ({
       label: i.label,
       action: () => navigate(i.href),
       group: "Навигация",

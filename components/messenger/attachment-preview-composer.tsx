@@ -65,7 +65,7 @@ export function AttachmentPreviewComposer({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="flex flex-col items-center text-center p-1">
+                <div className="flex flex-col items-center text-center p-1 min-w-0 w-full">
                   <FileText className="w-6 h-6 text-accent mb-1" />
                   <span className="text-[9px] text-foreground-muted truncate w-full">
                     {file.name}
@@ -103,13 +103,13 @@ export function AttachmentPreviewComposer({
           onKeyDown={(e) => {
             if (e.key === "Enter" && !uploading) onSend(caption);
           }}
-          className="flex-1 bg-surface-elevated border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:border-accent"
+          className="min-w-0 flex-1 bg-surface-elevated border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:border-accent"
         />
         <button
           type="button"
           onClick={() => onSend(caption)}
           disabled={uploading}
-          className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-semibold  transition-all flex items-center gap-1.5 disabled:opacity-50"
+          className="shrink-0 px-3 py-2 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 disabled:opacity-50"
         >
           {uploading ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

@@ -47,8 +47,8 @@ export function FileCard({
         <p className="text-xs font-medium truncate" title={name}>
           {name}
         </p>
-        <p className="text-[11px] text-foreground-muted mt-1">
-          {name.split(".").pop()?.toUpperCase()}
+        <p className="text-[11px] text-foreground-muted mt-1 truncate">
+          {name.includes(".") ? name.split(".").pop()?.slice(0, 12).toUpperCase() : "Файл"}
           {size ? ` · ${(size / 1024 / 1024).toFixed(1)} МБ` : ""}
         </p>
       </div>

@@ -1,4 +1,5 @@
 "use client";
+import { ViewportLayer } from "@/components/ui/viewport-layer";
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -294,7 +295,7 @@ function FilesContent() {
         </Sheet>
         {/* Create Folder Modal */}
         {isFolderModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <ViewportLayer className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
             <div
               className="fixed inset-0"
               onClick={() => setIsFolderModalOpen(false)}
@@ -335,7 +336,7 @@ function FilesContent() {
                 </button>
               </form>
             </div>
-          </div>
+          </ViewportLayer>
         )}
       </div>
     </AppShell>
