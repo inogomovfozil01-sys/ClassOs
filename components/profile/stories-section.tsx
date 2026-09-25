@@ -13,6 +13,9 @@ import {
   Trash2,
   Smile,
   Image as ImageIcon,
+  Video,
+  Volume2,
+  VolumeX,
   Check,
   Eye,
 } from "lucide-react";
@@ -26,6 +29,7 @@ export interface StoryItem {
   authorRole?: string;
   avatarUrl?: string | null;
   mediaUrl?: string;
+  mediaType?: "video" | "image";
   gradient: string;
   text?: string;
   sticker?: string;
@@ -79,12 +83,16 @@ export function StoriesSection({
   const [newStoryText, setNewStoryText] = useState("");
   const [newStoryGradient, setNewStoryGradient] = useState(GRADIENT_PRESETS[0].value);
   const [newStorySticker, setNewStorySticker] = useState("🔥");
-  const [newStoryImage, setNewStoryImage] = useState<string | null>(null);
+  const [newStoryMedia, setNewStoryMedia] = useState<string | null>(null);
+  const [newStoryMediaType, setNewStoryMediaType] = useState<"image" | "video">("image");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [reactionHearts, setReactionHearts] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [isMuted, setIsMuted] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Fetch real stories from API
   const fetchRealStories = async () => {
@@ -113,19 +121,51 @@ export function StoriesSection({
 
   useEffect(() => {
     fetchRealStories();
-    // Clean up any old mock keys from localStorage
+    // Proactively clean up any old mock/test keys
     try {
-      localStorage.removeItem("classos_stories_class-1");
-      localStorage.removeItem("classos_stories_class-2");
-      localStorage.removeItem("classos_stories_class-3");
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith("classos_stories_")) {
+          localStorage.removeItem(k);
+        }
+      }
     } catch {}
   }, [currentUser?.id]);
 
-  // Story Viewer Timer
+  // Video pause/play sync
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isPaused) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play().catch(() => {});
+      }
+    }
+  }, [isPaused]);
+
+  // Reset video and progress on story change
+  useEffect(() => {
+    setStoryProgress(0);
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [activeStoryIndex, activeViewerGroup]);
+
+  // Story Viewer Timer (for non-video stories)
   useEffect(() => {
     if (!activeViewerGroup) return;
-
     if (isPaused) return;
+
+    const current = activeViewerGroup.stories[activeStoryIndex];
+    // If it's a video, video element's onTimeUpdate controls progress
+    if (
+      current?.mediaType === "video" ||
+      current?.mediaUrl?.includes(".mp4") ||
+      current?.mediaUrl?.startsWith("data:video")
+    ) {
+      return;
+    }
 
     const interval = 50; // update progress every 50ms (total 5000ms = 5s)
     const step = (interval / 5000) * 100;
@@ -133,12 +173,10 @@ export function StoriesSection({
     const timer = setInterval(() => {
       setStoryProgress((prev) => {
         if (prev >= 100) {
-          // Move to next story or close
           if (activeStoryIndex < activeViewerGroup.stories.length - 1) {
             setActiveStoryIndex((idx) => idx + 1);
             return 0;
           } else {
-            // Find next group or close
             const allGroups = getAllGroups();
             const currentGroupIdx = allGroups.findIndex((g) => g.userId === activeViewerGroup.userId);
             if (currentGroupIdx !== -1 && currentGroupIdx < allGroups.length - 1) {
@@ -221,13 +259,32 @@ export function StoriesSection({
 
   const handleCreateStory = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStoryText.trim() && !newStoryImage) {
-      toast.error("Напишите текст или прикрепите фото");
+    if (!newStoryText.trim() && !newStoryMedia) {
+      toast.error("Добавьте фото, видео или напишите описание/текст");
       return;
     }
 
     setIsSubmitting(true);
     try {
+      let finalMediaUrl = newStoryMedia;
+
+      // If a real file was selected, upload via /api/files/upload
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        const uploadRes = await fetch("/api/files/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          if (uploadData.file?.downloadUrl) {
+            finalMediaUrl = uploadData.file.downloadUrl;
+          }
+        }
+      }
+
       const res = await fetch("/api/stories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -235,7 +292,8 @@ export function StoriesSection({
           text: newStoryText.trim() || undefined,
           gradient: newStoryGradient,
           sticker: newStorySticker,
-          mediaUrl: newStoryImage || undefined,
+          mediaUrl: finalMediaUrl || undefined,
+          mediaType: newStoryMedia ? newStoryMediaType : undefined,
         }),
       });
 
@@ -244,11 +302,17 @@ export function StoriesSection({
         throw new Error(data.error || "Не удалось опубликовать историю");
       }
 
-      toast.success("История опубликована на 24 часа! 🔥");
+      toast.success(
+        newStoryMediaType === "video" && newStoryMedia
+          ? "Видео-история опубликована на 24 часа! 🎬"
+          : "История опубликована на 24 часа! 🔥",
+      );
       setIsCreateOpen(false);
       setNewStoryText("");
-      setNewStoryImage(null);
+      setNewStoryMedia(null);
+      setSelectedFile(null);
       setNewStorySticker("🔥");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       await fetchRealStories();
     } catch (err: any) {
       toast.error(err.message || "Не удалось опубликовать историю");
@@ -286,20 +350,27 @@ export function StoriesSection({
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error("Файл слишком большой (макс. 8 МБ)");
+    const isVideo = file.type.startsWith("video/");
+    const isImage = file.type.startsWith("image/");
+
+    if (!isVideo && !isImage) {
+      toast.error("Поддерживаются только фото и видео (MP4, WebM, PNG, JPG)");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setNewStoryImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error("Файл слишком большой (максимум 50 МБ)");
+      return;
+    }
+
+    setSelectedFile(file);
+    setNewStoryMediaType(isVideo ? "video" : "image");
+    const previewUrl = URL.createObjectURL(file);
+    setNewStoryMedia(previewUrl);
   };
 
   const handleSendReaction = (emoji: string) => {
@@ -479,22 +550,35 @@ export function StoriesSection({
 
             {/* Live Preview Box */}
             <div
-              className={`w-full h-64 rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between shadow-inner transition-all duration-300 ${
-                newStoryImage ? "bg-black" : `bg-gradient-to-br ${newStoryGradient}`
+              className={`w-full h-72 rounded-2xl p-4 relative overflow-hidden flex flex-col justify-between shadow-inner transition-all duration-300 ${
+                newStoryMedia ? "bg-black" : `bg-gradient-to-br ${newStoryGradient}`
               }`}
             >
-              {/* If Image is attached */}
-              {newStoryImage && (
-                <img
-                  src={newStoryImage}
-                  alt="Story preview"
-                  className="absolute inset-0 w-full h-full object-cover opacity-90"
-                />
-              )}
+              {/* If Video or Image is attached */}
+              {newStoryMedia &&
+                (newStoryMediaType === "video" ? (
+                  <video
+                    src={newStoryMedia}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-contain"
+                  />
+                ) : (
+                  <img
+                    src={newStoryMedia}
+                    alt="Story preview"
+                    className="absolute inset-0 w-full h-full object-cover opacity-90"
+                  />
+                ))}
+
+              {/* Dark subtle gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/60 pointer-events-none" />
 
               {/* Top info */}
               <div className="relative z-10 flex items-center justify-between">
-                <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-xs font-semibold">
+                <div className="flex items-center gap-2 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-xs font-semibold">
                   <UserAvatar
                     src={currentUser?.avatarUrl}
                     name={`${currentUser?.firstName || ""} ${currentUser?.lastName || ""}`}
@@ -506,15 +590,30 @@ export function StoriesSection({
                   </span>
                 </div>
 
-                <span className="text-2xl drop-shadow-md animate-bounce">{newStorySticker}</span>
+                <div className="flex items-center gap-1.5">
+                  {newStoryMedia && (
+                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20">
+                      {newStoryMediaType === "video" ? "🎬 Видео" : "📷 Фото"}
+                    </span>
+                  )}
+                  <span className="text-2xl drop-shadow-md animate-bounce">{newStorySticker}</span>
+                </div>
               </div>
 
-              {/* Story Text */}
-              <div className="relative z-10 my-auto text-center px-3">
-                <p className="text-white text-base sm:text-lg font-bold drop-shadow-lg leading-snug whitespace-pre-wrap">
-                  {newStoryText || "Ваш текст истории появится здесь..."}
-                </p>
-              </div>
+              {/* Center or Bottom Caption Preview */}
+              {!newStoryMedia ? (
+                <div className="relative z-10 my-auto text-center px-3">
+                  <p className="text-white text-base sm:text-lg font-bold drop-shadow-lg leading-snug whitespace-pre-wrap">
+                    {newStoryText || "Ваш текст истории появится здесь..."}
+                  </p>
+                </div>
+              ) : newStoryText ? (
+                <div className="relative z-10 p-2.5 rounded-xl bg-black/65 backdrop-blur-md text-white text-xs border border-white/15 line-clamp-3">
+                  <p className="leading-snug">{newStoryText}</p>
+                </div>
+              ) : (
+                <div />
+              )}
 
               {/* Bottom hint */}
               <div className="relative z-10 text-center">
@@ -526,16 +625,89 @@ export function StoriesSection({
 
             {/* Story Editor Controls */}
             <form onSubmit={handleCreateStory} className="space-y-4 mt-4 text-xs">
-              {/* Text Input */}
+              {/* Media Upload or Remove */}
               <div>
                 <label className="block font-semibold text-foreground mb-1.5">
-                  Текст истории или мысли
+                  Фото или Видео
+                </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={handleMediaUpload}
+                  className="hidden"
+                />
+
+                {newStoryMedia ? (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-surface-elevated border border-border">
+                    <span className="text-xs text-foreground font-medium flex items-center gap-2 truncate">
+                      {newStoryMediaType === "video" ? (
+                        <Video size={16} className="text-purple-500 shrink-0" />
+                      ) : (
+                        <ImageIcon size={16} className="text-accent shrink-0" />
+                      )}
+                      <span className="truncate">
+                        {selectedFile?.name ||
+                          (newStoryMediaType === "video"
+                            ? "Видео прикреплено"
+                            : "Фото прикреплено")}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewStoryMedia(null);
+                        setSelectedFile(null);
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                      }}
+                      className="text-xs text-danger hover:underline font-semibold shrink-0 ml-2"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (fileInputRef.current) {
+                          fileInputRef.current.accept = "image/*";
+                          fileInputRef.current.click();
+                        }
+                      }}
+                      className="py-2.5 px-3 rounded-2xl bg-surface-elevated hover:bg-surface-hover border border-border text-foreground font-semibold flex items-center justify-center gap-2 transition-colors text-xs shadow-xs"
+                    >
+                      <ImageIcon size={16} className="text-accent" />
+                      <span>Выбрать фото</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (fileInputRef.current) {
+                          fileInputRef.current.accept = "video/*";
+                          fileInputRef.current.click();
+                        }
+                      }}
+                      className="py-2.5 px-3 rounded-2xl bg-surface-elevated hover:bg-surface-hover border border-border text-foreground font-semibold flex items-center justify-center gap-2 transition-colors text-xs shadow-xs"
+                    >
+                      <Video size={16} className="text-purple-500" />
+                      <span>Выбрать видео</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Description Input */}
+              <div>
+                <label className="block font-semibold text-foreground mb-1.5">
+                  Описание к фото/видео или текст
                 </label>
                 <textarea
                   rows={2}
                   value={newStoryText}
                   onChange={(e) => setNewStoryText(e.target.value)}
-                  placeholder="Что интересного произошло в школе? Напишите..."
+                  placeholder="Добавьте описание или мысль дня..."
                   className="w-full bg-surface-elevated border border-border rounded-2xl p-3 text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:border-accent resize-none transition-colors"
                   maxLength={280}
                 />
@@ -544,8 +716,8 @@ export function StoriesSection({
                 </p>
               </div>
 
-              {/* Gradient selector if no image */}
-              {!newStoryImage && (
+              {/* Gradient selector if no media */}
+              {!newStoryMedia && (
                 <div>
                   <label className="block font-semibold text-foreground mb-1.5">
                     Фон градиента
@@ -593,42 +765,6 @@ export function StoriesSection({
                 </div>
               </div>
 
-              {/* Photo Upload or Remove */}
-              <div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-
-                {newStoryImage ? (
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-surface-elevated border border-border">
-                    <span className="text-xs text-foreground font-medium flex items-center gap-1.5 truncate">
-                      <ImageIcon size={14} className="text-accent shrink-0" />
-                      Фото прикреплено
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setNewStoryImage(null)}
-                      className="text-xs text-danger hover:underline font-semibold"
-                    >
-                      Удалить
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-2.5 px-3 rounded-2xl bg-surface-elevated hover:bg-surface-hover border border-border text-foreground font-semibold flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <ImageIcon size={16} className="text-accent" />
-                    <span>Прикрепить фотографию</span>
-                  </button>
-                )}
-              </div>
-
               {/* Action Buttons */}
               <div className="pt-2 flex items-center gap-2">
                 <button
@@ -641,7 +777,7 @@ export function StoriesSection({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-2.5 rounded-2xl bg-gradient-to-r from-accent to-purple-600 hover:opacity-95 text-white font-semibold transition-all shadow-md flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 rounded-2xl bg-gradient-to-r from-accent to-purple-600 hover:opacity-95 text-white font-semibold transition-all shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   <Sparkles size={14} />
                   <span>{isSubmitting ? "Публикация..." : "Опубликовать"}</span>
@@ -665,13 +801,34 @@ export function StoriesSection({
         >
           {/* Main Story Container */}
           <div className="w-full max-w-sm sm:max-w-md h-[92vh] max-h-[820px] rounded-3xl relative overflow-hidden flex flex-col justify-between shadow-2xl border border-white/10">
-            {/* Background (Gradient or Photo) */}
+            {/* Background (Gradient, Photo or Video) */}
             {currentStory.mediaUrl ? (
-              <img
-                src={currentStory.mediaUrl}
-                alt="Story"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+              currentStory.mediaType === "video" ||
+              currentStory.mediaUrl.endsWith(".mp4") ||
+              currentStory.mediaUrl.endsWith(".webm") ||
+              currentStory.mediaUrl.startsWith("data:video") ? (
+                <video
+                  ref={videoRef}
+                  src={currentStory.mediaUrl}
+                  autoPlay
+                  playsInline
+                  muted={isMuted}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onTimeUpdate={(e) => {
+                    const vid = e.currentTarget;
+                    if (vid.duration && !isNaN(vid.duration)) {
+                      setStoryProgress((vid.currentTime / vid.duration) * 100);
+                    }
+                  }}
+                  onEnded={handleNextStory}
+                />
+              ) : (
+                <img
+                  src={currentStory.mediaUrl}
+                  alt="Story"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )
             ) : (
               <div
                 className={`absolute inset-0 w-full h-full bg-gradient-to-br ${currentStory.gradient}`}
@@ -755,6 +912,23 @@ export function StoriesSection({
                 </div>
 
                 <div className="flex items-center gap-1">
+                  {/* Sound mute toggle for video */}
+                  {(currentStory.mediaType === "video" ||
+                    currentStory.mediaUrl?.includes(".mp4") ||
+                    currentStory.mediaUrl?.startsWith("data:video")) && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsMuted((prev) => !prev);
+                      }}
+                      className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
+                      title={isMuted ? "Включить звук" : "Выключить звук"}
+                    >
+                      {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                    </button>
+                  )}
+
                   {/* Delete button if current user */}
                   {activeViewerGroup.userId === currentUser?.id && (
                     <button
@@ -788,12 +962,22 @@ export function StoriesSection({
                 </div>
               )}
 
-              {currentStory.text && (
+              {/* If text-only / gradient story */}
+              {!currentStory.mediaUrl && currentStory.text && (
                 <p className="text-white text-lg sm:text-xl font-extrabold drop-shadow-lg leading-relaxed whitespace-pre-wrap">
                   {currentStory.text}
                 </p>
               )}
             </div>
+
+            {/* Bottom Caption Overlay for Photo / Video Stories */}
+            {currentStory.mediaUrl && currentStory.text && (
+              <div className="relative z-20 px-4 pb-1 pointer-events-none">
+                <div className="bg-black/60 backdrop-blur-md border border-white/15 rounded-2xl p-3 text-white text-xs sm:text-sm font-medium shadow-lg leading-snug line-clamp-4">
+                  <p>{currentStory.text}</p>
+                </div>
+              </div>
+            )}
 
             {/* Bottom Interaction Bar */}
             <div className="relative z-30 p-4 space-y-3">

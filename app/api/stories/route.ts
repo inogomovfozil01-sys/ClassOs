@@ -9,6 +9,7 @@ interface StoryData {
   authorRole?: string;
   avatarUrl?: string | null;
   mediaUrl?: string;
+  mediaType?: "video" | "image";
   gradient: string;
   text?: string;
   sticker?: string;
@@ -98,24 +99,45 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { text, gradient, sticker, mediaUrl } = body;
+    const { text, gradient, sticker, mediaUrl, mediaType } = body;
 
     if (!text?.trim() && !mediaUrl) {
       return NextResponse.json(
-        { error: "Текст или изображение обязательно" },
+        { error: "Текст или медиа (фото/видео) обязательно" },
         { status: 400 },
       );
     }
 
     const currentStories = await getStoredStories();
 
+    // Determine mediaType if not explicitly passed
+    let resolvedMediaType = mediaType;
+    if (!resolvedMediaType && mediaUrl) {
+      if (
+        mediaUrl.startsWith("data:video") ||
+        mediaUrl.endsWith(".mp4") ||
+        mediaUrl.endsWith(".webm") ||
+        mediaUrl.endsWith(".mov")
+      ) {
+        resolvedMediaType = "video";
+      } else {
+        resolvedMediaType = "image";
+      }
+    }
+
     const newStory: StoryData = {
       id: `story_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       userId: user.id,
       authorName: `${user.firstName} ${user.lastName}`.trim(),
-      authorRole: user.role === "LEADER" ? "Лидер класса" : user.role === "TEACHER" ? "Учитель" : "Ученик 7-«А»",
+      authorRole:
+        user.role === "LEADER"
+          ? "Лидер класса"
+          : user.role === "TEACHER"
+          ? "Учитель"
+          : "Ученик 7-«А»",
       avatarUrl: user.avatarUrl,
       mediaUrl: mediaUrl || undefined,
+      mediaType: resolvedMediaType || undefined,
       gradient: gradient || "from-orange-500 via-rose-500 to-purple-600",
       text: text?.trim() || undefined,
       sticker: sticker || undefined,
