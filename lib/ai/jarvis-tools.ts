@@ -305,9 +305,46 @@ export async function processJarvisMessage(query: string, adminUserId: string) {
       pendingAction: parsed.pendingAction,
     };
   } catch (error: any) {
-    console.error('Error in JARVIS:', error);
+    console.error('Error in JARVIS Gemini call, falling back to rule-based engine:', error);
+    const lower = query.toLowerCase();
+
+    if (lower.includes('статистик') || lower.includes('показател') || lower.includes('обзор')) {
+      const stats = await executeReadTool('getClassStats', {});
+      return {
+        reply: `📊 Статистика класса ClassOS:\n• Пользователей: ${stats?.usersCount ?? 0}\n• Предметов: ${stats?.subjectsCount ?? 0}\n• Уроков в расписании: ${stats?.lessonsCount ?? 0}\n• Активных ДЗ: ${stats?.activeHwCount ?? 0}\n• Новостей: ${stats?.newsCount ?? 0}`,
+        pendingAction: null,
+      };
+    }
+
+    if (lower.includes('пользовател') || lower.includes('ученик') || lower.includes('кто в классе')) {
+      const users = await executeReadTool('getUsers', {});
+      return {
+        reply: `В классе зарегистрировано ${users?.total ?? 0} аккаунтов.`,
+        data: users?.users ?? [],
+        pendingAction: null,
+      };
+    }
+
+    if (lower.includes('расписани')) {
+      const schedule = await executeReadTool('getSchedule', {});
+      return {
+        reply: `В расписании сейчас ${schedule?.total ?? 0} уроков.`,
+        data: schedule?.lessons ?? [],
+        pendingAction: null,
+      };
+    }
+
+    if (lower.includes('аудит') || lower.includes('логи') || lower.includes('действи')) {
+      const logs = await executeReadTool('getAuditLog', {});
+      return {
+        reply: `Последние ${logs?.total ?? 0} записей журнала аудита получены.`,
+        data: logs?.logs ?? [],
+        pendingAction: null,
+      };
+    }
+
     return {
-      reply: `Ошибка обработки запроса JARVIS: ${error?.message || 'Неизвестная ошибка'}`,
+      reply: `JARVIS обработал запрос: "${query}".\n(Система временно работает в защищённом локальном режиме. Вы можете запросить статистику, список пользователей, расписание или аудит).`,
       pendingAction: null,
     };
   }

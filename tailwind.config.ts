@@ -17,6 +17,7 @@ const config: Config = {
           DEFAULT: "var(--surface)",
           elevated: "var(--surface-elevated)",
           hover: "var(--surface-hover)",
+          secondary: "var(--surface-secondary)",
         },
         border: {
           DEFAULT: "var(--border)",
@@ -43,11 +44,12 @@ const config: Config = {
           DEFAULT: "var(--danger)",
           muted: "var(--danger-muted)",
         },
+        destructive: "var(--danger)",
       },
       borderRadius: {
-        xl: "8px",
-        "2xl": "10px",
-        "3xl": "14px",
+        xl: "var(--radius-control)",
+        "2xl": "var(--radius-card)",
+        "3xl": "var(--radius-panel)",
       },
       boxShadow: {
         glass: "0 8px 32px 0 rgba(0, 0, 0, 0.36), 0 0 0 1px var(--border)",

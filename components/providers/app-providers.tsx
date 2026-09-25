@@ -3,12 +3,19 @@
 import { ReactNode, useEffect } from "react";
 import { AuthProvider } from "./auth-context";
 import { SocketProvider } from "./socket-context";
+import { detectPlatform } from "@/lib/platform";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   useEffect(() => {
+    document.documentElement.dataset.platform = detectPlatform(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
+    const updateHeight = () => document.documentElement.style.setProperty("--app-height", `${Math.round(window.visualViewport?.height || window.innerHeight)}px`);
+    updateHeight();
+    window.visualViewport?.addEventListener("resize", updateHeight);
+    window.addEventListener("resize", updateHeight);
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const apply = () => {
-      const theme = localStorage.getItem("classos-theme") || "dark";
+      let theme = "system";
+      try { theme = localStorage.getItem("classos-theme") || "system"; } catch {}
       const dark = theme === "dark" || (theme === "system" && media.matches);
       document.documentElement.classList.toggle("dark", dark);
       document.documentElement.classList.toggle("light", !dark);
@@ -18,6 +25,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
     media.addEventListener("change", apply);
     window.addEventListener("classos-theme", apply);
     return () => {
+      window.visualViewport?.removeEventListener("resize", updateHeight);
+      window.removeEventListener("resize", updateHeight);
       media.removeEventListener("change", apply);
       window.removeEventListener("classos-theme", apply);
     };
@@ -37,8 +46,8 @@ export function ThemeSelect() {
         aria-label="Оформление"
         defaultValue={
           typeof window === "undefined"
-            ? "dark"
-            : localStorage.getItem("classos-theme") || "dark"
+            ? "system"
+            : localStorage.getItem("classos-theme") || "system"
         }
         onChange={(e) => {
           localStorage.setItem("classos-theme", e.target.value);

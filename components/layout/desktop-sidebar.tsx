@@ -70,8 +70,8 @@ export function DesktopSidebar() {
       href={item.href}
       title={collapsed ? item.label : undefined}
       aria-label={item.label}
-      aria-current={path === item.href ? "page" : undefined}
-      className={`sidebar-link ${path === item.href || (item.href !== "/" && path.startsWith(item.href + "/")) ? "active" : ""}`}
+      aria-current={path === item.href || (item.href === "/" && path === "/home") || (item.href !== "/" && path.startsWith(item.href + "/")) ? "page" : undefined}
+      className={`sidebar-link ${path === item.href || (item.href === "/" && path === "/home") || (item.href !== "/" && path.startsWith(item.href + "/")) ? "active" : ""}`}
     >
       <item.icon size={17} />
       {!collapsed && <span>{item.label}</span>}
@@ -84,32 +84,19 @@ export function DesktopSidebar() {
         {!collapsed && (
           <div>
             <strong>ClassOS</strong>
-            <small>Рабочее пространство класса</small>
+            <small>Учёба и общение</small>
           </div>
         )}
       </Link>
       <nav className="sidebar-navigation" aria-label="Разделы ClassOS">
-        {schoolLinks
-          .filter(
-            (item) => item.href !== "/files" || canAccessClassFiles(user.role),
-          )
-          .map((item) => (
-            <div key={item.href}>
-              {!collapsed &&
-                (item.href === "/schedule" ||
-                  item.href === "/news" ||
-                  item.href === "/today") && (
-                  <div className="sidebar-group">
-                    {item.href === "/schedule"
-                      ? "Учёба"
-                      : item.href === "/news"
-                        ? "Класс"
-                        : "Дополнительно"}
-                  </div>
-                )}
-              {link(item)}
-            </div>
-          ))}
+        {[
+          { title: "Учёба", paths: ["/", "/today", "/schedule", "/homework", "/subjects", "/tests"] },
+          { title: "Наш класс", paths: ["/news", "/events", "/chats", "/members", "/albums", "/tables", "/files", "/duty"] },
+          { title: "Сервисы", paths: ["/emaktab", "/ai"] },
+        ].map(group => <div key={group.title}>
+          {!collapsed && <div className="sidebar-group">{group.title}</div>}
+          {group.paths.map(href => schoolLinks.find(item => item.href === href)!).filter(item => item.href !== "/files" || canAccessClassFiles(user.role)).map(link)}
+        </div>)}
         {isLeaderOrHigher(user.role) &&
           link({
             href: "/class/manage",

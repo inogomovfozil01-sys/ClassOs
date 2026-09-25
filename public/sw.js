@@ -1,4 +1,4 @@
-const CACHE_NAME = 'classos-cache-v1';
+const CACHE_NAME = 'classos-cache-v2-platform-design';
 const OFFLINE_URL = '/offline.html';
 
 const ASSETS_TO_CACHE = [

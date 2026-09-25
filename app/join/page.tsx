@@ -172,23 +172,19 @@ export default function JoinPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gradient-to-br from-background via-surface-elevated/40 to-background text-foreground relative overflow-hidden">
-      {/* Decorative backdrop gradients */}
-      <div className="absolute top-1/4 -left-20 w-80 h-80 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="join-page min-h-screen w-full flex items-center justify-center p-4 bg-background text-foreground relative">
 
       <div className="w-full max-w-md glass-panel rounded-3xl p-6 sm:p-8 border border-border-strong shadow-2xl relative z-10 animate-fade-in">
         {/* Brand header */}
-        <div className="text-center mb-6">
+        <div className="text-left mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-semibold mb-3">
-            <Sparkles size={14} className="animate-pulse" />
             <span>Приглашение в класс</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            ClassOS
+            Присоединиться к ClassOS
           </h1>
           <p className="text-xs text-foreground-muted mt-1">
-            Быстрое создание аккаунта ученика
+            Создайте аккаунт, чтобы быть на связи с классом.
           </p>
         </div>
 

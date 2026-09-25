@@ -42,6 +42,7 @@ export function MobileBottomNav() {
             key={item.href}
             aria-current={
               path === item.href ||
+              (item.href === "/" && path === "/home") ||
               (item.href !== "/" && path.startsWith(item.href + "/"))
                 ? "page"
                 : undefined

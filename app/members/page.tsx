@@ -162,7 +162,7 @@ export default function MembersPage() {
             description="Никто не найден по вашему запросу. Проверьте правильность написания имени."
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          <div className="members-grid">
             {filtered.map((p) => {
               const account = tab === "teachers" ? p.user?.id : p.id;
               const isOnline = account ? isUserOnline(account) : false;
@@ -193,12 +193,12 @@ export default function MembersPage() {
                     </div>
 
                     <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-foreground truncate">
+                      <h3 className="text-sm font-semibold text-foreground break-words">
                         {account ? (
                           <button
                             type="button"
                             onClick={() => setSelectedProfileId(account)}
-                            className="hover:underline hover:text-accent transition-colors text-left font-bold"
+                            className="block max-w-full whitespace-normal break-words hover:underline hover:text-accent transition-colors text-left font-semibold"
                           >
                             {p.lastName} {p.firstName} {p.middleName || ""}
                           </button>

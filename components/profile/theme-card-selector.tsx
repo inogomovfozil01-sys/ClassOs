@@ -6,14 +6,14 @@ import { Moon, Sun, Monitor, Check } from "lucide-react";
 type ThemeOption = "dark" | "light" | "system";
 
 export function ThemeCardSelector() {
-  const [currentTheme, setCurrentTheme] = useState<ThemeOption>("dark");
+  const [currentTheme, setCurrentTheme] = useState<ThemeOption>("system");
 
   useEffect(() => {
-    const saved = (localStorage.getItem("classos-theme") as ThemeOption) || "dark";
+    const saved = (localStorage.getItem("classos-theme") as ThemeOption) || "system";
     setCurrentTheme(saved);
 
     const handleThemeChange = () => {
-      const active = (localStorage.getItem("classos-theme") as ThemeOption) || "dark";
+      const active = (localStorage.getItem("classos-theme") as ThemeOption) || "system";
       setCurrentTheme(active);
     };
 
